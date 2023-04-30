@@ -55,6 +55,7 @@ fn main() {
             change_cursor_system,
             delete_selections_system,
             highlight_outline_system,
+            drag_move_system,
         ))
         .run()
 }
@@ -291,6 +292,28 @@ fn highlight_outline_system(
                             mat.show_outline = 0;
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+fn drag_move_system(
+    mut query: Query<(&Selection, &mut Transform)>,
+    mouse_input: Res<Input<MouseButton>>,
+    mut mouse_motion_events: EventReader<MouseMotion>,
+) {
+    if mouse_input.pressed(MouseButton::Left) {
+        let mut delta: Vec2 = Vec2::ZERO;
+        for event in mouse_motion_events.iter() {
+            delta += event.delta;
+        }
+
+        if delta != Vec2::ZERO {
+            for (sel, mut transform) in query.iter_mut() {
+                if sel.selected() {
+                    transform.translation.x += delta.x * 0.01;
+                    transform.translation.y -= delta.y * 0.01;
                 }
             }
         }
