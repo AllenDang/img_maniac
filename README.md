@@ -12,3 +12,5 @@ A cross-platform image (texture) viewer
 # TODO
 - [ ] Support webp format
 - [ ] Support tiff format
+- [ ] Embed shader code into executable
+- [ ] Embed font into executable
