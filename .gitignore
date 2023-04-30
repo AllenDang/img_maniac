@@ -14,3 +14,4 @@ Cargo.lock
 *.pdb
 assets/.DS_Store
 .DS_Store
+Cargo.lock

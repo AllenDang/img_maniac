@@ -1,15 +1,15 @@
 [package]
 name = "img_maniac"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-authors = ["Allen <allengnr@gmail.com>"]
+authors = ["Allen Dang <allengnr@gmail.com>"]
 description = "A powerful image viewer"
 
 [package.metadata.bundle]
 name = "img_maniac"
-identifier = "com.allen.img_maniac"
+identifier = "com.allendang.img_maniac"
 icon = ["icon/app.png"]
-version = "0.1.0"
+version = "0.2.0"
 copyright = "Copyright (c) Allen Dang 2023. All rights reserved."
 category = "Developer Tool"
 short_description = "A powerful image viewer"
@@ -43,5 +43,5 @@ bevy = { version = "0.10", default-features = false, features = [
   "basis-universal",
   "zstd",               # needed if using zstd in KTX2 files
 ] }
-bevy-inspector-egui = "0.18.3"
+# bevy-inspector-egui = "0.18.3"
 bevy_mod_picking = "0.12.0"

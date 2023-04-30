@@ -58,7 +58,7 @@ fn main() {
         .run()
 }
 
-fn startup_system(mut cmds: Commands) {
+fn startup_system(mut cmds: Commands, asset_server: Res<AssetServer>) {
     // camera
     cmds.spawn((
         Camera3dBundle {
@@ -68,6 +68,38 @@ fn startup_system(mut cmds: Commands) {
         CameraController,
         PickingCameraBundle::default(),
     ));
+
+    // UI
+    let font_handle = asset_server.load("font/FiraCode-Regular.ttf");
+
+    let panel_style = Style {
+        align_self: AlignSelf::FlexEnd,
+        justify_content: JustifyContent::Center,
+        align_items: AlignItems::Center,
+        position: UiRect {
+            bottom: Val::Px(10.0),
+            ..Default::default()
+        },
+        size: Size::new(Val::Percent(100.0), Val::Auto),
+        ..Default::default()
+    };
+
+    let text_style = TextStyle {
+        font: font_handle,
+        font_size: 16.0,
+        color: Color::GRAY,
+    };
+
+    cmds.spawn(NodeBundle {
+        style: panel_style,
+        ..Default::default()
+    })
+    .with_children(|parent| {
+        parent.spawn(TextBundle::from_section(
+            "A: Show RGBA | 1-4: Switch RGBA | MouseWheel: Zoom | Space+MLB: Move Canvas | X: Del Selected | Shift+X: Del All",
+            text_style,
+        ));
+    });
 }
 
 fn file_drag_and_drop_system(
