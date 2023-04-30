@@ -1,6 +1,10 @@
 # img_maniac
 A cross-platform image (texture) viewer
 
+![screenshot](https://github.com/AllenDang/img_maniac/blob/5a072a2e1c31b599cd53cb2515e279ce1d785ff6/screenshot/image_maniac_screenshot.png)
+
+![demo](https://github.com/AllenDang/img_maniac/blob/5a072a2e1c31b599cd53cb2515e279ce1d785ff6/screenshot/demo_switch_rgba_channel.gif)
+
 # Features
 - Drag and drop images: Users can easily add as many images as they want to the main window by simply dragging and dropping them.
 - RGBA channel switching: With the press of a number key (1-4), users can switch between the RGBA channels of all the images they have loaded.
