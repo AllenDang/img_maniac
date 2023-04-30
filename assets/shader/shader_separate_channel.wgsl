@@ -1,4 +1,4 @@
-struct MaterialSeperateChannel {
+struct MaterialSeparateChannel {
     channel: u32,
     show_outline: u32,
     outline_color: vec4<f32>,
@@ -6,7 +6,7 @@ struct MaterialSeperateChannel {
 };
 
 @group(1) @binding(0)
-var<uniform> material: MaterialSeperateChannel;
+var<uniform> material: MaterialSeparateChannel;
 
 @group(1) @binding(1)
 var base_color_texture: texture_2d<f32>;
