@@ -5,7 +5,6 @@ use bevy::{
     prelude::*,
     winit::WinitSettings,
 };
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_mod_picking::{
     InteractablePickingPlugin, PickableBundle, PickingCameraBundle, PickingEvent, PickingPlugin,
     Selection, SelectionEvent,
@@ -40,7 +39,6 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(MaterialPlugin::<MaterialSeperateChannel>::default())
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
@@ -170,9 +168,11 @@ fn image_dropped_system(
     mut cmds: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<MaterialSeperateChannel>>,
-    imgs: Query<Entity, With<DropInImage>>,
+    imgs: Query<&DropInImage>,
     asset_server: Res<AssetServer>,
 ) {
+    let mut img_count = imgs.iter().count() + 1;
+
     for evt in image_drop_event_reader.iter() {
         let tex_handle = asset_server.load(evt.droped_image_path.clone());
         let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(3.0, 3.0))));
@@ -192,13 +192,15 @@ fn image_dropped_system(
                 transform: Transform::from_xyz(
                     evt.world_pos.x,
                     evt.world_pos.y,
-                    imgs.iter().count() as f32 / 10.0,
+                    img_count as f32 / 10.0,
                 ),
                 ..default()
             },
             PickableBundle::default(),
             DropInImage,
         ));
+
+        img_count += 1;
     }
 }
 
@@ -262,11 +264,19 @@ fn delete_selections_system(
     mut cmds: Commands,
     query: Query<(Entity, &Selection)>,
 ) {
-    if keyboard_input.pressed(KeyCode::X) {
+    // press x to delete selected image
+    if keyboard_input.pressed(KeyCode::X) && !keyboard_input.pressed(KeyCode::LShift) {
         for (entity, sel) in query.iter() {
             if sel.selected() {
                 cmds.entity(entity).despawn_recursive();
             }
+        }
+    }
+
+    // press shift + x to delete all
+    if keyboard_input.pressed(KeyCode::X) && keyboard_input.pressed(KeyCode::LShift) {
+        for (entity, _) in query.iter() {
+            cmds.entity(entity).despawn_recursive();
         }
     }
 }
@@ -299,11 +309,12 @@ fn highlight_outline_system(
 }
 
 fn drag_move_system(
-    mut query: Query<(&Selection, &mut Transform)>,
+    keyboard_input: Res<Input<KeyCode>>,
     mouse_input: Res<Input<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
+    mut query: Query<(&Selection, &mut Transform)>,
 ) {
-    if mouse_input.pressed(MouseButton::Left) {
+    if mouse_input.pressed(MouseButton::Left) && !keyboard_input.pressed(KeyCode::Space) {
         let mut delta: Vec2 = Vec2::ZERO;
         for event in mouse_motion_events.iter() {
             delta += event.delta;
