@@ -96,7 +96,7 @@ fn startup_system(mut cmds: Commands, asset_server: Res<AssetServer>) {
     })
     .with_children(|parent| {
         parent.spawn(TextBundle::from_section(
-            "A: Show RGBA | 1-4: Switch RGBA | MouseWheel: Zoom | Space+LMB: Move Canvas | X: Del Selected | Shift+X: Del All",
+            "A: Show RGBA | 1-4: Switch RGBA | MouseWheel: Zoom | Space+LMB: Move Canvas | ESC: Reset | X: Del Selected | Shift+X: Del All",
             text_style,
         ));
     });
@@ -166,6 +166,7 @@ fn camera_control_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut query: Query<&mut Transform, With<CameraController>>,
 ) {
+    // Space + LMB to move camera
     if keyboard_input.pressed(KeyCode::Space) && mouse_input.pressed(MouseButton::Left) {
         let mut delta: Vec2 = Vec2::ZERO;
         for event in mouse_motion_events.iter() {
@@ -177,6 +178,13 @@ fn camera_control_system(
                 transform.translation.x -= delta.x * 0.01;
                 transform.translation.y += delta.y * 0.01;
             }
+        }
+    }
+
+    // Escape to reset camera
+    if keyboard_input.just_pressed(KeyCode::Escape) {
+        for mut transform in query.iter_mut() {
+            transform.translation = Vec3::new(0.0, 0.0, 8.0);
         }
     }
 
