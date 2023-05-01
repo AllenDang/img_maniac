@@ -9,12 +9,12 @@ use bevy_mod_picking::{
     InteractablePickingPlugin, PickableBundle, PickingCameraBundle, PickingEvent, PickingPlugin,
     Selection, SelectionEvent,
 };
-use mat_seperate_channel::MaterialSeperateChannel;
+use mat_separate_channel::MaterialSeparateChannel;
 
-mod mat_seperate_channel;
+mod mat_separate_channel;
 
 struct ImageDropEvent {
-    droped_image_path: PathBuf,
+    dropped_image_path: PathBuf,
     world_pos: Vec2,
 }
 
@@ -39,7 +39,7 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugin(MaterialPlugin::<MaterialSeperateChannel>::default())
+        .add_plugin(MaterialPlugin::<MaterialSeparateChannel>::default())
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
         .add_event::<ImageDropEvent>()
@@ -96,7 +96,7 @@ fn startup_system(mut cmds: Commands, asset_server: Res<AssetServer>) {
     })
     .with_children(|parent| {
         parent.spawn(TextBundle::from_section(
-            "A: Show RGBA | 1-4: Switch RGBA | MouseWheel: Zoom | Space+MLB: Move Canvas | X: Del Selected | Shift+X: Del All",
+            "A: Show RGBA | 1-4: Switch RGBA | MouseWheel: Zoom | Space+LMB: Move Canvas | X: Del Selected | Shift+X: Del All",
             text_style,
         ));
     });
@@ -129,7 +129,7 @@ fn file_drag_and_drop_system(
                     }
 
                     image_drop_event_writer.send(ImageDropEvent {
-                        droped_image_path: path_buf.clone(),
+                        dropped_image_path: path_buf.clone(),
                         world_pos: if let Some(world_pos) = world_pos {
                             world_pos
                         } else {
@@ -149,17 +149,14 @@ fn change_cursor_system(
 ) {
     let mut window = windows.single_mut();
 
-    if keyboard_input.pressed(KeyCode::Space) && !mouse_input.pressed(MouseButton::Left) {
-        if window.cursor.icon != CursorIcon::Grab {
-            window.cursor.icon = CursorIcon::Grab;
-        }
-    } else if keyboard_input.pressed(KeyCode::Space) && mouse_input.pressed(MouseButton::Left) {
-        if window.cursor.icon != CursorIcon::Grabbing {
-            window.cursor.icon = CursorIcon::Grabbing;
-        }
-    } else if window.cursor.icon != CursorIcon::Default {
-        window.cursor.icon = CursorIcon::Default;
-    }
+    let space = keyboard_input.pressed(KeyCode::Space);
+    let mouse_left = mouse_input.pressed(MouseButton::Left);
+
+    window.cursor.icon = match (space, mouse_left) {
+        (true, false) => CursorIcon::Grab,
+        (true, true) => CursorIcon::Grabbing,
+        _ => CursorIcon::Default,
+    };
 }
 
 fn camera_control_system(
@@ -186,7 +183,7 @@ fn camera_control_system(
     // Handle mouse wheel input to translate camera's z position
     for event in mouse_wheel_events.iter() {
         for mut transform in query.iter_mut() {
-            let new_z = (transform.translation.z - event.y * 0.1).max(1.0).min(20.0);
+            let new_z = (transform.translation.z - event.y * 0.1).clamp(1.0, 20.0);
 
             if new_z != 0.0 {
                 transform.translation.z = new_z;
@@ -199,17 +196,17 @@ fn image_dropped_system(
     mut image_drop_event_reader: EventReader<ImageDropEvent>,
     mut cmds: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<MaterialSeperateChannel>>,
+    mut materials: ResMut<Assets<MaterialSeparateChannel>>,
     imgs: Query<&DropInImage>,
     asset_server: Res<AssetServer>,
 ) {
     let mut img_count = imgs.iter().count() + 1;
 
     for evt in image_drop_event_reader.iter() {
-        let tex_handle = asset_server.load(evt.droped_image_path.clone());
+        let tex_handle = asset_server.load(evt.dropped_image_path.clone());
         let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(3.0, 3.0))));
 
-        let mat_handle = materials.add(MaterialSeperateChannel {
+        let mat_handle = materials.add(MaterialSeparateChannel {
             base_color_texture: Some(tex_handle),
             channel: 0,
             show_outline: 0,
@@ -240,10 +237,10 @@ fn image_dropped_system(
 fn update_quad_ratio_system(
     mut cmds: Commands,
     mut query: Query<
-        (Entity, &Handle<MaterialSeperateChannel>, &mut Transform),
+        (Entity, &Handle<MaterialSeparateChannel>, &mut Transform),
         (With<DropInImage>, Without<Resized>),
     >,
-    materials: Res<Assets<MaterialSeperateChannel>>,
+    materials: Res<Assets<MaterialSeparateChannel>>,
     images: Res<Assets<Image>>,
 ) {
     for (entity, mat_handle, mut transform) in query.iter_mut() {
@@ -259,8 +256,8 @@ fn update_quad_ratio_system(
 
 fn change_channel_system(
     keyboard_input: Res<Input<KeyCode>>,
-    mut materials: ResMut<Assets<MaterialSeperateChannel>>,
-    mut query: Query<&Handle<MaterialSeperateChannel>, With<DropInImage>>,
+    mut materials: ResMut<Assets<MaterialSeparateChannel>>,
+    mut query: Query<&Handle<MaterialSeparateChannel>, With<DropInImage>>,
 ) {
     let mut change_channel = |ch: u32| {
         for mat_handle in query.iter_mut() {
@@ -314,8 +311,8 @@ fn delete_selections_system(
 }
 
 fn highlight_outline_system(
-    mut materials: ResMut<Assets<MaterialSeperateChannel>>,
-    mut query_mat: Query<&Handle<MaterialSeperateChannel>>,
+    mut materials: ResMut<Assets<MaterialSeparateChannel>>,
+    mut query_mat: Query<&Handle<MaterialSeparateChannel>>,
     mut events: EventReader<PickingEvent>,
 ) {
     for event in events.iter() {

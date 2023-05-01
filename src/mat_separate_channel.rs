@@ -6,7 +6,7 @@ use bevy::{
 
 #[derive(AsBindGroup, TypeUuid, Debug, Clone)]
 #[uuid = "11CE6B44-B18F-4149-A2E4-3E1D8E602664"]
-pub struct MaterialSeperateChannel {
+pub struct MaterialSeparateChannel {
     #[uniform(0)]
     pub channel: u32,
     #[uniform(0)]
@@ -21,9 +21,9 @@ pub struct MaterialSeperateChannel {
     pub base_color_texture: Option<Handle<Image>>,
 }
 
-impl Material for MaterialSeperateChannel {
+impl Material for MaterialSeparateChannel {
     fn fragment_shader() -> ShaderRef {
-        "shader/shader_seperate_channel.wgsl".into()
+        "shader/shader_separate_channel.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {
