@@ -28,3 +28,4 @@ A cross-platform image (texture) viewer
 # TODO
 - [ ] Embed shader code into executable
 - [ ] Embed font into executable
+- [ ] Auto layout when drop multiple images at once
