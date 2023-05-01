@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
@@ -9,8 +9,10 @@ use bevy_mod_picking::{
     InteractablePickingPlugin, PickableBundle, PickingCameraBundle, PickingEvent, PickingPlugin,
     Selection, SelectionEvent,
 };
+use check_img_format::is_supported_format;
 use mat_separate_channel::MaterialSeparateChannel;
 
+mod check_img_format;
 mod mat_separate_channel;
 
 struct ImageDropEvent {
@@ -58,7 +60,11 @@ fn main() {
         .run()
 }
 
-fn startup_system(mut cmds: Commands, asset_server: Res<AssetServer>) {
+fn startup_system(
+    mut cmds: Commands,
+    mut image_drop_event_writer: EventWriter<ImageDropEvent>,
+    asset_server: Res<AssetServer>,
+) {
     // camera
     cmds.spawn((
         Camera3dBundle {
@@ -100,6 +106,27 @@ fn startup_system(mut cmds: Commands, asset_server: Res<AssetServer>) {
             text_style,
         ));
     });
+
+    // Process command line args, should be multiple image paths
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if !args.is_empty() {
+        if let Ok(cwd) = std::env::current_dir() {
+            for arg in args.iter() {
+                let img_path = if arg.starts_with('.') {
+                    cwd.join(arg)
+                } else {
+                    Path::new(arg).to_path_buf()
+                };
+
+                if img_path.exists() && is_supported_format(&img_path) {
+                    image_drop_event_writer.send(ImageDropEvent {
+                        dropped_image_path: img_path,
+                        world_pos: Vec2::ZERO,
+                    });
+                }
+            }
+        }
+    }
 }
 
 fn file_drag_and_drop_system(
@@ -114,29 +141,26 @@ fn file_drag_and_drop_system(
         if let FileDragAndDrop::DroppedFile { window, path_buf } = event {
             let win = windows.get(*window).unwrap();
 
-            if path_buf.is_file() {
-                let ext = path_buf.extension().unwrap().to_str().unwrap();
-                if ["bmp", "dds", "exr", "jpeg", "jpg", "tga", "png"].contains(&ext) {
-                    let mut world_pos: Option<Vec2> = None;
+            if is_supported_format(path_buf) {
+                let mut world_pos: Option<Vec2> = None;
 
-                    if let Some(ray) = win
-                        .cursor_position()
-                        .and_then(|cursor| cam.viewport_to_world(cam_transform, cursor))
-                    {
-                        if let Some(distance) = ray.intersect_plane(Vec3::ZERO, Vec3::Z) {
-                            world_pos = Some(ray.get_point(distance).truncate());
-                        }
+                if let Some(ray) = win
+                    .cursor_position()
+                    .and_then(|cursor| cam.viewport_to_world(cam_transform, cursor))
+                {
+                    if let Some(distance) = ray.intersect_plane(Vec3::ZERO, Vec3::Z) {
+                        world_pos = Some(ray.get_point(distance).truncate());
                     }
-
-                    image_drop_event_writer.send(ImageDropEvent {
-                        dropped_image_path: path_buf.clone(),
-                        world_pos: if let Some(world_pos) = world_pos {
-                            world_pos
-                        } else {
-                            Vec2::ZERO
-                        },
-                    })
                 }
+
+                image_drop_event_writer.send(ImageDropEvent {
+                    dropped_image_path: path_buf.clone(),
+                    world_pos: if let Some(world_pos) = world_pos {
+                        world_pos
+                    } else {
+                        Vec2::ZERO
+                    },
+                })
             }
         }
     }

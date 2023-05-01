@@ -24,6 +24,7 @@ A cross-platform image (texture) viewer
 - Cross-platform compatibility: Img Maniac is designed to work seamlessly on multiple operating systems, including macOS, Linux, and Windows.
 - User-friendly interface: The tool has an intuitive and user-friendly interface that makes it easy for users to manipulate their images.
 - Fast performance: Img Maniac is optimized for fast image processing and can handle large files with ease.
+- Command line invocation: invoke `img_maniac ./a.png ./b.bmp ./c.dds`
 
 # TODO
 - [ ] Embed shader code into executable
