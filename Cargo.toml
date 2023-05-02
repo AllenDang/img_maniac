@@ -4,6 +4,7 @@ version = "0.2.0"
 edition = "2021"
 authors = ["Allen Dang <allengnr@gmail.com>"]
 description = "A powerful image viewer"
+license = "MIT OR Apache-2.0"
 
 [package.metadata.bundle]
 name = "img_maniac"
