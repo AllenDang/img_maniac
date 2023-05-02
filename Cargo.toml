@@ -38,3 +38,4 @@ bevy = { version = "0.10", features = [
 ] }
 # bevy-inspector-egui = "0.18.3"
 bevy_mod_picking = "0.12.0"
+imagesize = "0.11.0"

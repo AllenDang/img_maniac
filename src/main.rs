@@ -235,6 +235,15 @@ fn image_dropped_system(
     let mut img_count = imgs.iter().count() + 1;
 
     for evt in image_drop_event_reader.iter() {
+        // Check the maximum width and height before createing a texture
+        // wgpu has a limit of 16384x16384
+        if let Ok(dim) = imagesize::size(evt.dropped_image_path.clone()) {
+            if dim.width >= 16384 || dim.height >= 16384 {
+                //TODO: Show error message
+                continue;
+            }
+        }
+
         let tex_handle = asset_server.load(evt.dropped_image_path.clone());
         let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(3.0, 3.0))));
 
