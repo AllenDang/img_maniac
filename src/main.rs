@@ -300,10 +300,10 @@ fn update_quad_ratio_system(
             if let Some(tex) = images.get(mat.base_color_texture.as_ref().unwrap()) {
                 let ratio = tex.size().x / tex.size().y;
                 transform.scale = Vec3::new(ratio, 1.0, 1.0);
+
+                cmds.entity(entity).insert(Resized);
             }
         }
-
-        cmds.entity(entity).insert(Resized);
     }
 }
 

@@ -24,7 +24,16 @@ opt-level = 3
 codegen-units = 1
 
 [dependencies]
-bevy = { version = "0.10", features = [
+bevy = { version = "0.10", default-features = false, features = [
+  "bevy_asset",
+  "bevy_scene",
+  "bevy_winit",
+  "bevy_core_pipeline",
+  "bevy_pbr",
+  "bevy_render",
+  "bevy_text",
+  "bevy_ui",
+  "x11",
   "png",
   "bmp",
   "dds",
@@ -34,7 +43,7 @@ bevy = { version = "0.10", features = [
   "hdr",
   "ktx2",
   "basis-universal",
-  "zstd",            # needed if using zstd in KTX2 files
+  "zstd",               # needed if using zstd in KTX2 files
 ] }
 bevy_mod_picking = "0.12.0"
 imagesize = "0.11.0"
