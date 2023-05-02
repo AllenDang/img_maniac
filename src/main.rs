@@ -9,8 +9,10 @@ use bevy_mod_picking::{
     InteractablePickingPlugin, PickableBundle, PickingCameraBundle, PickingEvent, PickingPlugin,
     Selection, SelectionEvent,
 };
+
 use check_img_format::is_supported_format;
 use mat_separate_channel::MaterialSeparateChannel;
+use taffy::style_helpers::{TaffyAuto, TaffyMaxContent};
 
 mod check_img_format;
 mod mat_separate_channel;
@@ -20,6 +22,8 @@ struct ImageDropEvent {
     world_pos: Vec2,
 }
 
+struct RearrangeEvent;
+
 #[derive(Component)]
 struct CameraController;
 
@@ -28,6 +32,8 @@ struct DropInImage;
 
 #[derive(Component)]
 struct Resized;
+
+const QUAD_SIZE: f32 = 3.0;
 
 fn main() {
     App::new()
@@ -45,6 +51,7 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
         .add_event::<ImageDropEvent>()
+        .add_event::<RearrangeEvent>()
         .add_startup_system(startup_system)
         .add_systems((
             file_drag_and_drop_system,
@@ -56,6 +63,8 @@ fn main() {
             delete_selections_system,
             highlight_outline_system,
             drag_move_system,
+            rearrange_image_system,
+            trigger_rearrange_system,
         ))
         .run()
 }
@@ -102,7 +111,7 @@ fn startup_system(
     })
     .with_children(|parent| {
         parent.spawn(TextBundle::from_section(
-            "A: Show RGBA | 1-4: Switch RGBA | MouseWheel: Zoom | Space+LMB: Move Canvas | ESC: Reset | X: Del Selected | Shift+X: Del All",
+            "A: Show RGBA | 1-4: Switch RGBA | R: Re-arrange | MouseWheel: Zoom | Space+LMB: Move Canvas | ESC: Reset | X: Del Selected | Shift+X: Del All",
             text_style,
         ));
     });
@@ -245,7 +254,9 @@ fn image_dropped_system(
         }
 
         let tex_handle = asset_server.load(evt.dropped_image_path.clone());
-        let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(3.0, 3.0))));
+        let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(
+            QUAD_SIZE, QUAD_SIZE,
+        ))));
 
         let mat_handle = materials.add(MaterialSeparateChannel {
             base_color_texture: Some(tex_handle),
@@ -289,9 +300,10 @@ fn update_quad_ratio_system(
             if let Some(tex) = images.get(mat.base_color_texture.as_ref().unwrap()) {
                 let ratio = tex.size().x / tex.size().y;
                 transform.scale = Vec3::new(ratio, 1.0, 1.0);
-                cmds.entity(entity).insert(Resized);
             }
         }
+
+        cmds.entity(entity).insert(Resized);
     }
 }
 
@@ -398,5 +410,82 @@ fn drag_move_system(
                 }
             }
         }
+    }
+}
+
+fn rearrange_image_system(
+    mut events: EventReader<RearrangeEvent>,
+    mut query: Query<&mut Transform, With<Resized>>,
+) {
+    if events.iter().len() > 0 && query.iter().len() > 0 {
+        let mut t = taffy::Taffy::new();
+        let mut nodes = Vec::new();
+        let mut entities = Vec::new();
+
+        let factor = 100.0;
+
+        for trans in query.iter_mut() {
+            let node = t
+                .new_leaf(taffy::prelude::Style {
+                    size: taffy::prelude::Size {
+                        width: taffy::prelude::Dimension::Points(
+                            trans.scale.x * QUAD_SIZE * factor,
+                        ),
+                        height: taffy::prelude::Dimension::Points(
+                            trans.scale.y * QUAD_SIZE * factor,
+                        ),
+                    },
+                    ..default()
+                })
+                .unwrap();
+
+            nodes.push(node);
+            entities.push(trans);
+        }
+
+        let max_width = 7.0 * QUAD_SIZE * factor;
+
+        let root = t
+            .new_with_children(
+                taffy::prelude::Style {
+                    flex_direction: taffy::prelude::FlexDirection::Row,
+                    flex_wrap: taffy::prelude::FlexWrap::Wrap,
+                    justify_content: Some(taffy::prelude::JustifyContent::Center),
+                    align_items: Some(taffy::prelude::AlignItems::Center),
+                    gap: taffy::prelude::Size {
+                        width: taffy::prelude::LengthPercentage::Points(0.16 * factor),
+                        height: taffy::prelude::LengthPercentage::Points(0.16 * factor),
+                    },
+                    size: taffy::prelude::Size {
+                        width: taffy::prelude::Dimension::Points(max_width),
+                        height: taffy::prelude::Dimension::AUTO,
+                    },
+                    ..default()
+                },
+                &nodes,
+            )
+            .unwrap();
+
+        t.compute_layout(root, taffy::prelude::Size::MAX_CONTENT)
+            .unwrap();
+
+        for (i, n) in nodes.iter().enumerate() {
+            if let Ok(n) = t.layout(*n) {
+                entities[i].translation = Vec3::new(
+                    (n.location.x - max_width / 2.0) / factor,
+                    n.location.y / factor,
+                    entities[i].translation.z,
+                )
+            }
+        }
+    }
+}
+
+fn trigger_rearrange_system(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut rearrange_event: EventWriter<RearrangeEvent>,
+) {
+    if keyboard_input.pressed(KeyCode::R) {
+        rearrange_event.send(RearrangeEvent);
     }
 }
