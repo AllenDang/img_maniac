@@ -1,6 +1,6 @@
 [package]
 name = "img_maniac"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Allen Dang <allengnr@gmail.com>"]
 description = "A powerful image viewer"
@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 name = "img_maniac"
 identifier = "com.allendang.img_maniac"
 icon = ["icon/app.png"]
-version = "0.2.0"
+version = "0.3.0"
 copyright = "Copyright (c) Allen Dang 2023. All rights reserved."
 category = "Developer Tool"
 short_description = "A powerful image viewer"
