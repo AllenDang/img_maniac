@@ -121,7 +121,7 @@ fn startup_system(
     if !args.is_empty() {
         if let Ok(cwd) = std::env::current_dir() {
             for arg in args.iter() {
-                let img_path = if arg.starts_with('.') {
+                let img_path = if Path::new(arg).is_relative() {
                     cwd.join(arg)
                 } else {
                     Path::new(arg).to_path_buf()
