@@ -13,7 +13,6 @@ A cross-platform image (texture) viewer
     - basis 
     - bmp 
     - dds 
-    - gif 
     - exr 
     - hdr 
     - jpeg 
