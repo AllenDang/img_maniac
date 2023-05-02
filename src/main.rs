@@ -215,7 +215,7 @@ fn camera_control_system(
     // Handle mouse wheel input to translate camera's z position
     for event in mouse_wheel_events.iter() {
         for mut transform in query.iter_mut() {
-            let new_z = (transform.translation.z - event.y * 0.1).clamp(1.0, 20.0);
+            let new_z = (transform.translation.z - event.y * 0.1).clamp(1.0, 30.0);
 
             if new_z != 0.0 {
                 transform.translation.z = new_z;
