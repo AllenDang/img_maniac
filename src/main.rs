@@ -244,13 +244,17 @@ fn image_dropped_system(
     let mut img_count = imgs.iter().count() + 1;
 
     for evt in image_drop_event_reader.iter() {
-        // Check the maximum width and height before createing a texture
-        // wgpu has a limit of 16384x16384
+        let mut width_ratio = 1.0;
+
         if let Ok(dim) = imagesize::size(evt.dropped_image_path.clone()) {
+            // Check the maximum width and height before createing a texture
+            // wgpu has a limit of 16384x16384
             if dim.width >= 16384 || dim.height >= 16384 {
                 //TODO: Show error message
                 continue;
             }
+
+            width_ratio = dim.width as f32 / dim.height as f32;
         }
 
         let tex_handle = asset_server.load(evt.dropped_image_path.clone());
@@ -266,20 +270,27 @@ fn image_dropped_system(
             outline_width: 1.0,
         });
 
-        cmds.spawn((
+        let mut transform =
+            Transform::from_xyz(evt.world_pos.x, evt.world_pos.y, img_count as f32 / 10.0);
+
+        if width_ratio != 1.0 {
+            transform.scale = Vec3::new(width_ratio, 1.0, 1.0);
+        }
+
+        let mut c = cmds.spawn((
             MaterialMeshBundle {
                 mesh: quad_handle,
                 material: mat_handle,
-                transform: Transform::from_xyz(
-                    evt.world_pos.x,
-                    evt.world_pos.y,
-                    img_count as f32 / 10.0,
-                ),
+                transform,
                 ..default()
             },
             PickableBundle::default(),
             DropInImage,
         ));
+
+        if width_ratio != 1.0 {
+            c.insert(Resized);
+        }
 
         img_count += 1;
     }
