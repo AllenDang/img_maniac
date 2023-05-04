@@ -375,10 +375,15 @@ fn delete_selections_system(
 }
 
 fn highlight_outline_system(
+    keyboard_input: Res<Input<KeyCode>>,
     mut materials: ResMut<Assets<MaterialSeparateChannel>>,
     mut query_mat: Query<&Handle<MaterialSeparateChannel>>,
     mut events: EventReader<PickingEvent>,
 ) {
+    if keyboard_input.pressed(KeyCode::Space) {
+        return;
+    }
+
     for event in events.iter() {
         if let PickingEvent::Selection(s) = event {
             match s {
