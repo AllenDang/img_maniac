@@ -201,6 +201,8 @@ fn camera_control_system(
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut query: Query<&mut Transform, With<CameraController>>,
 ) {
+    let mut cam_transform = query.single_mut();
+
     // Space + LMB to move camera
     if keyboard_input.pressed(KeyCode::Space) && mouse_input.pressed(MouseButton::Left) {
         let mut delta: Vec2 = Vec2::ZERO;
@@ -208,29 +210,25 @@ fn camera_control_system(
             delta += event.delta;
         }
 
+        let speed = 0.001;
+
         if delta != Vec2::ZERO {
-            for mut transform in query.iter_mut() {
-                transform.translation.x -= delta.x * 0.01;
-                transform.translation.y += delta.y * 0.01;
-            }
+            cam_transform.translation.x -= delta.x * speed * cam_transform.translation.z;
+            cam_transform.translation.y += delta.y * speed * cam_transform.translation.z;
         }
     }
 
     // Escape to reset camera
     if keyboard_input.just_pressed(KeyCode::Escape) {
-        for mut transform in query.iter_mut() {
-            transform.translation = Vec3::new(0.0, 0.0, 8.0);
-        }
+        cam_transform.translation = Vec3::new(0.0, 0.0, 8.0);
     }
 
     // Handle mouse wheel input to translate camera's z position
     for event in mouse_wheel_events.iter() {
-        for mut transform in query.iter_mut() {
-            let new_z = (transform.translation.z - event.y * 0.1).clamp(1.0, 30.0);
+        let new_z = (cam_transform.translation.z - event.y * 0.1).clamp(1.0, 30.0);
 
-            if new_z != 0.0 {
-                transform.translation.z = new_z;
-            }
+        if new_z != 0.0 {
+            cam_transform.translation.z = new_z;
         }
     }
 }
