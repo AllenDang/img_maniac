@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
+    render::camera::ScalingMode,
     winit::WinitSettings,
 };
 use bevy_mod_picking::{
@@ -32,10 +33,8 @@ struct CameraController;
 #[derive(Component)]
 struct DropInImage;
 
-#[derive(Component)]
-struct Resized;
-
 const QUAD_SIZE: f32 = 3.0;
+const ZOOM_SPEED: f32 = 1.1;
 
 fn main() {
     App::new()
@@ -58,7 +57,6 @@ fn main() {
         .add_systems((
             file_drag_and_drop_system,
             image_dropped_system,
-            update_quad_ratio_system,
             change_channel_system,
             camera_control_system,
             change_cursor_system,
@@ -79,7 +77,13 @@ fn startup_system(
     // camera
     cmds.spawn((
         Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 0.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(0.0, 0.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+            projection: OrthographicProjection {
+                scale: 3.0,
+                scaling_mode: ScalingMode::FixedVertical(2.0),
+                ..default()
+            }
+            .into(),
             ..default()
         },
         CameraController,
@@ -199,9 +203,9 @@ fn camera_control_system(
     mouse_input: Res<Input<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
-    mut query: Query<&mut Transform, With<CameraController>>,
+    mut query: Query<(&mut Transform, &mut Projection), With<CameraController>>,
 ) {
-    let mut cam_transform = query.single_mut();
+    let (mut cam_transform, mut projection) = query.single_mut();
 
     // Space + LMB to move camera
     if keyboard_input.pressed(KeyCode::Space) && mouse_input.pressed(MouseButton::Left) {
@@ -210,11 +214,13 @@ fn camera_control_system(
             delta += event.delta;
         }
 
-        let speed = 0.001;
+        let speed = 0.0025;
 
         if delta != Vec2::ZERO {
-            cam_transform.translation.x -= delta.x * speed * cam_transform.translation.z;
-            cam_transform.translation.y += delta.y * speed * cam_transform.translation.z;
+            if let Projection::Orthographic(ortho) = projection.as_mut() {
+                cam_transform.translation.x -= delta.x * speed * ortho.scale;
+                cam_transform.translation.y += delta.y * speed * ortho.scale;
+            }
         }
     }
 
@@ -224,11 +230,16 @@ fn camera_control_system(
     }
 
     // Handle mouse wheel input to translate camera's z position
-    for event in mouse_wheel_events.iter() {
-        let new_z = (cam_transform.translation.z - event.y * 0.1).clamp(1.0, 30.0);
+    if let Projection::Orthographic(ortho) = projection.as_mut() {
+        for event in mouse_wheel_events.iter() {
+            let mut scale = ortho.scale;
+            scale *= if event.y > 0.0 {
+                ZOOM_SPEED
+            } else {
+                1.0 / ZOOM_SPEED
+            };
 
-        if new_z != 0.0 {
-            cam_transform.translation.z = new_z;
+            ortho.scale = scale.clamp(0.1, 8.0);
         }
     }
 }
@@ -271,13 +282,13 @@ fn image_dropped_system(
         });
 
         let mut transform =
-            Transform::from_xyz(evt.world_pos.x, evt.world_pos.y, img_count as f32 / 10.0);
+            Transform::from_xyz(evt.world_pos.x, evt.world_pos.y, img_count as f32 / 1000.0);
 
         if width_ratio != 1.0 {
             transform.scale = Vec3::new(width_ratio, 1.0, 1.0);
         }
 
-        let mut c = cmds.spawn((
+        cmds.spawn((
             MaterialMeshBundle {
                 mesh: quad_handle,
                 material: mat_handle,
@@ -288,33 +299,7 @@ fn image_dropped_system(
             DropInImage,
         ));
 
-        if width_ratio != 1.0 {
-            c.insert(Resized);
-        }
-
         img_count += 1;
-    }
-}
-
-#[allow(clippy::type_complexity)]
-fn update_quad_ratio_system(
-    mut cmds: Commands,
-    mut query: Query<
-        (Entity, &Handle<MaterialSeparateChannel>, &mut Transform),
-        (With<DropInImage>, Without<Resized>),
-    >,
-    materials: Res<Assets<MaterialSeparateChannel>>,
-    images: Res<Assets<Image>>,
-) {
-    for (entity, mat_handle, mut transform) in query.iter_mut() {
-        if let Some(mat) = materials.get(mat_handle) {
-            if let Some(tex) = images.get(mat.base_color_texture.as_ref().unwrap()) {
-                let ratio = tex.size().x / tex.size().y;
-                transform.scale = Vec3::new(ratio, 1.0, 1.0);
-
-                cmds.entity(entity).insert(Resized);
-            }
-        }
     }
 }
 
@@ -431,7 +416,7 @@ fn drag_move_system(
 
 fn rearrange_image_system(
     mut events: EventReader<RearrangeEvent>,
-    mut query: Query<&mut Transform, With<Resized>>,
+    mut query: Query<&mut Transform, With<DropInImage>>,
 ) {
     if events.iter().len() > 0 && query.iter().len() > 0 {
         let mut t = taffy::Taffy::new();
