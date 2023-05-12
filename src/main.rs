@@ -253,6 +253,8 @@ fn image_dropped_system(
 ) {
     let mut img_count = imgs.iter().count() + 1;
 
+    let mut batch_cmds = Vec::new();
+
     for evt in image_drop_event_reader.iter() {
         let mut width_ratio = 1.0;
 
@@ -287,7 +289,7 @@ fn image_dropped_system(
             transform.scale = Vec3::new(width_ratio, 1.0, 1.0);
         }
 
-        cmds.spawn((
+        let bundle = (
             MaterialMeshBundle {
                 mesh: quad_handle,
                 material: mat_handle,
@@ -296,10 +298,14 @@ fn image_dropped_system(
             },
             PickableBundle::default(),
             DropInImage,
-        ));
+        );
+
+        batch_cmds.push(bundle);
 
         img_count += 1;
     }
+
+    cmds.spawn_batch(batch_cmds);
 }
 
 fn change_channel_system(
