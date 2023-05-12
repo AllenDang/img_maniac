@@ -1550,7 +1550,8 @@ dependencies = [
 [[package]]
 name = "imagesize"
 version = "0.12.0"
-source = "git+https://github.com/AllenDang/imagesize#b7c551e400ef19d6d0e022d6c1dc733b1ad1f395"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "029d73f573d8e8d63e6d5020011d3255b28c3ba85d6cf870a07184ed23de9284"
 
 [[package]]
 name = "img_maniac"
