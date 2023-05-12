@@ -226,7 +226,7 @@ fn camera_control_system(
 
     // Escape to reset camera
     if keyboard_input.just_pressed(KeyCode::Escape) {
-        cam_transform.translation = Vec3::new(0.0, 0.0, 8.0);
+        cam_transform.translation = Vec3::new(0.0, 0.0, 3.0);
     }
 
     // Handle mouse wheel input to translate camera's z position
@@ -239,7 +239,7 @@ fn camera_control_system(
                 1.0 / ZOOM_SPEED
             };
 
-            ortho.scale = scale.clamp(0.1, 8.0);
+            ortho.scale = scale.clamp(0.1, 12.0);
         }
     }
 }
