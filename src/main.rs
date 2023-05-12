@@ -9,8 +9,7 @@ use bevy::{
     winit::WinitSettings,
 };
 use bevy_mod_picking::{
-    InteractablePickingPlugin, PickableBundle, PickingCameraBundle, PickingEvent, PickingPlugin,
-    Selection, SelectionEvent,
+    InteractablePickingPlugin, PickableBundle, PickingCameraBundle, PickingPlugin, Selection,
 };
 
 use check_img_format::is_supported_format;
@@ -35,6 +34,7 @@ struct DropInImage;
 
 const QUAD_SIZE: f32 = 3.0;
 const ZOOM_SPEED: f32 = 1.1;
+const DRAG_SPEED: f32 = 0.002;
 
 fn main() {
     App::new()
@@ -61,7 +61,6 @@ fn main() {
             camera_control_system,
             change_cursor_system,
             delete_selections_system,
-            highlight_outline_system,
             drag_move_system,
             rearrange_image_system,
             trigger_rearrange_system,
@@ -359,44 +358,15 @@ fn delete_selections_system(
     }
 }
 
-fn highlight_outline_system(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut materials: ResMut<Assets<MaterialSeparateChannel>>,
-    mut query_mat: Query<&Handle<MaterialSeparateChannel>>,
-    mut events: EventReader<PickingEvent>,
-) {
-    if keyboard_input.pressed(KeyCode::Space) {
-        return;
-    }
-
-    for event in events.iter() {
-        if let PickingEvent::Selection(s) = event {
-            match s {
-                SelectionEvent::JustSelected(s) => {
-                    if let Ok(mat_handle) = query_mat.get_mut(*s) {
-                        if let Some(mat) = materials.get_mut(mat_handle) {
-                            mat.show_outline = 1;
-                        }
-                    }
-                }
-                SelectionEvent::JustDeselected(s) => {
-                    if let Ok(mat_handle) = query_mat.get_mut(*s) {
-                        if let Some(mat) = materials.get_mut(mat_handle) {
-                            mat.show_outline = 0;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 fn drag_move_system(
     keyboard_input: Res<Input<KeyCode>>,
     mouse_input: Res<Input<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
-    mut query: Query<(&Selection, &mut Transform)>,
+    mut query: Query<(&Selection, &mut Transform), With<DropInImage>>,
+    query_camera: Query<&Projection, With<CameraController>>,
 ) {
+    let cam_projection = query_camera.single();
+
     if mouse_input.pressed(MouseButton::Left) && !keyboard_input.pressed(KeyCode::Space) {
         let mut delta: Vec2 = Vec2::ZERO;
         for event in mouse_motion_events.iter() {
@@ -406,8 +376,10 @@ fn drag_move_system(
         if delta != Vec2::ZERO {
             for (sel, mut transform) in query.iter_mut() {
                 if sel.selected() {
-                    transform.translation.x += delta.x * 0.01;
-                    transform.translation.y -= delta.y * 0.01;
+                    if let Projection::Orthographic(ortho) = cam_projection {
+                        transform.translation.x += delta.x * DRAG_SPEED * ortho.scale;
+                        transform.translation.y -= delta.y * DRAG_SPEED * ortho.scale;
+                    }
                 }
             }
         }
