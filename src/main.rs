@@ -42,7 +42,7 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Image Maniac".into(),
+                title: format!("Image Maniac v{}", env!("CARGO_PKG_VERSION")),
                 resolution: (1440., 900.).into(),
                 ..default()
             }),
@@ -263,6 +263,11 @@ fn image_dropped_system(
             // wgpu has a limit of 16384x16384
             if dim.width >= 16384 || dim.height >= 16384 {
                 //TODO: Show error message
+                continue;
+            }
+
+            // Make sure the image is 2D
+            if dim.width <= 1 || dim.height <= 1 {
                 continue;
             }
 

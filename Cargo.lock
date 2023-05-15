@@ -1555,7 +1555,7 @@ checksum = "029d73f573d8e8d63e6d5020011d3255b28c3ba85d6cf870a07184ed23de9284"
 
 [[package]]
 name = "img_maniac"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "bevy",
  "bevy_mod_picking",
