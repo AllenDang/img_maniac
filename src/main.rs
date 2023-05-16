@@ -8,10 +8,7 @@ use bevy::{
     render::camera::ScalingMode,
     winit::WinitSettings,
 };
-use bevy_mod_picking::{
-    InteractablePickingPlugin, PickableBundle, PickingCameraBundle, PickingPlugin, Selection,
-};
-
+use bevy_mod_picking::prelude::*;
 use check_img_format::is_supported_format;
 use mat_separate_channel::MaterialSeparateChannel;
 use taffy::style_helpers::{TaffyAuto, TaffyMaxContent};
@@ -49,8 +46,7 @@ fn main() {
             ..default()
         }))
         .add_plugin(MaterialPlugin::<MaterialSeparateChannel>::default())
-        .add_plugin(PickingPlugin)
-        .add_plugin(InteractablePickingPlugin)
+        .add_plugins(DefaultPickingPlugins)
         .add_event::<ImageDropEvent>()
         .add_event::<RearrangeEvent>()
         .add_startup_system(startup_system)
@@ -61,7 +57,7 @@ fn main() {
             camera_control_system,
             change_cursor_system,
             delete_selections_system,
-            drag_move_system,
+            highlight_outline_system,
             rearrange_image_system,
             trigger_rearrange_system,
         ))
@@ -86,7 +82,7 @@ fn startup_system(
             ..default()
         },
         CameraController,
-        PickingCameraBundle::default(),
+        RaycastPickCamera::default(),
     ));
 
     // UI
@@ -203,6 +199,8 @@ fn camera_control_system(
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut query: Query<(&mut Transform, &mut Projection), With<CameraController>>,
+    mut materials: ResMut<Assets<MaterialSeparateChannel>>,
+    mut query_mat: Query<&Handle<MaterialSeparateChannel>, With<PickSelection>>,
 ) {
     let (mut cam_transform, mut projection) = query.single_mut();
 
@@ -239,6 +237,13 @@ fn camera_control_system(
             };
 
             ortho.scale = scale.clamp(0.1, 12.0);
+        }
+
+        // Set selection outline width based on camera scale
+        for mat_handle in query_mat.iter_mut() {
+            if let Some(mat) = materials.get_mut(mat_handle) {
+                mat.outline_width = 0.5 * ortho.scale;
+            }
         }
     }
 }
@@ -302,6 +307,8 @@ fn image_dropped_system(
                 ..default()
             },
             PickableBundle::default(),
+            RaycastPickTarget::default(),
+            OnPointer::<Drag>::run_callback(drag_move_system),
             DropInImage,
         );
 
@@ -350,12 +357,12 @@ fn change_channel_system(
 fn delete_selections_system(
     keyboard_input: Res<Input<KeyCode>>,
     mut cmds: Commands,
-    query: Query<(Entity, &Selection)>,
+    query: Query<(Entity, &PickSelection), With<DropInImage>>,
 ) {
     // press x to delete selected image
     if keyboard_input.pressed(KeyCode::X) && !keyboard_input.pressed(KeyCode::LShift) {
         for (entity, sel) in query.iter() {
-            if sel.selected() {
+            if sel.is_selected {
                 cmds.entity(entity).despawn_recursive();
             }
         }
@@ -370,31 +377,26 @@ fn delete_selections_system(
 }
 
 fn drag_move_system(
+    In(event): In<ListenedEvent<Drag>>,
     keyboard_input: Res<Input<KeyCode>>,
     mouse_input: Res<Input<MouseButton>>,
-    mut mouse_motion_events: EventReader<MouseMotion>,
-    mut query: Query<(&Selection, &mut Transform), With<DropInImage>>,
+    mut query: Query<(&PickSelection, &mut Transform), With<DropInImage>>,
     query_camera: Query<&Projection, With<CameraController>>,
-) {
+) -> Bubble {
     let cam_projection = query_camera.single();
 
     if mouse_input.pressed(MouseButton::Left) && !keyboard_input.pressed(KeyCode::Space) {
-        let mut delta: Vec2 = Vec2::ZERO;
-        for event in mouse_motion_events.iter() {
-            delta += event.delta;
-        }
-
-        if delta != Vec2::ZERO {
-            for (sel, mut transform) in query.iter_mut() {
-                if sel.selected() {
-                    if let Projection::Orthographic(ortho) = cam_projection {
-                        transform.translation.x += delta.x * DRAG_SPEED * ortho.scale;
-                        transform.translation.y -= delta.y * DRAG_SPEED * ortho.scale;
-                    }
+        if let Projection::Orthographic(ortho) = cam_projection {
+            for (selection, mut transform) in query.iter_mut() {
+                if selection.is_selected {
+                    transform.translation.x += event.delta.x * DRAG_SPEED * ortho.scale;
+                    transform.translation.y += event.delta.y * DRAG_SPEED * ortho.scale;
                 }
             }
         }
     }
+
+    Bubble::Up
 }
 
 fn rearrange_image_system(
@@ -471,5 +473,28 @@ fn trigger_rearrange_system(
 ) {
     if keyboard_input.pressed(KeyCode::R) {
         rearrange_event.send(RearrangeEvent);
+    }
+}
+
+fn highlight_outline_system(
+    mut selections: EventReader<PointerEvent<Select>>,
+    mut deselections: EventReader<PointerEvent<Deselect>>,
+    mut materials: ResMut<Assets<MaterialSeparateChannel>>,
+    mut query: Query<&Handle<MaterialSeparateChannel>, With<PickSelection>>,
+) {
+    for selection in selections.iter() {
+        if let Ok(mat_handle) = query.get_mut(selection.target) {
+            if let Some(mat) = materials.get_mut(mat_handle) {
+                mat.show_outline = 1;
+            }
+        }
+    }
+
+    for deselection in deselections.iter() {
+        if let Ok(mat_handle) = query.get_mut(deselection.target) {
+            if let Some(mat) = materials.get_mut(mat_handle) {
+                mat.show_outline = 0;
+            }
+        }
     }
 }

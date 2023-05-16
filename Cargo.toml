@@ -45,6 +45,9 @@ bevy = { version = "0.10", default-features = false, features = [
   "basis-universal",
   "zstd",               # needed if using zstd in KTX2 files
 ] }
-bevy_mod_picking = "0.12.0"
+bevy_mod_picking = { version = "0.13", default-features = false, features = [
+  "backend_raycast",
+  "selection",
+] }
 imagesize = { version = "0.12" }
 taffy = { version = "0.3.5", default-features = false, features = ["std"] }
