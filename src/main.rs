@@ -230,7 +230,7 @@ fn camera_control_system(
     if let Projection::Orthographic(ortho) = projection.as_mut() {
         for event in mouse_wheel_events.iter() {
             let mut scale = ortho.scale;
-            scale *= if event.y > 0.0 {
+            scale *= if event.y <= 0.0 {
                 ZOOM_SPEED
             } else {
                 1.0 / ZOOM_SPEED
