@@ -8,7 +8,7 @@ use bevy::{
     render::camera::ScalingMode,
     winit::WinitSettings,
 };
-use bevy_mod_picking::prelude::*;
+use bevy_mod_picking::{picking_core::PickingPluginsSettings, prelude::*};
 use check_img_format::is_supported_format;
 use mat_separate_channel::MaterialSeparateChannel;
 use taffy::style_helpers::{TaffyAuto, TaffyMaxContent};
@@ -37,6 +37,12 @@ fn main() {
     App::new()
         .insert_resource(WinitSettings::desktop_app())
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
+        .insert_resource(PickingPluginsSettings {
+            enable: true,
+            enable_input: true,
+            enable_highlighting: true,
+            enable_interacting: true,
+        })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: format!("Image Maniac v{}", env!("CARGO_PKG_VERSION")),
@@ -193,16 +199,26 @@ fn change_cursor_system(
     };
 }
 
+#[allow(clippy::too_many_arguments)]
 fn camera_control_system(
     keyboard_input: Res<Input<KeyCode>>,
     mouse_input: Res<Input<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
+    mut picking_setting: ResMut<PickingPluginsSettings>,
     mut query: Query<(&mut Transform, &mut Projection), With<CameraController>>,
     mut materials: ResMut<Assets<MaterialSeparateChannel>>,
     mut query_mat: Query<&Handle<MaterialSeparateChannel>, With<PickSelection>>,
 ) {
     let (mut cam_transform, mut projection) = query.single_mut();
+
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        picking_setting.enable = false;
+    }
+
+    if keyboard_input.just_released(KeyCode::Space) {
+        picking_setting.enable = true;
+    }
 
     // Space + LMB to move camera
     if keyboard_input.pressed(KeyCode::Space) && mouse_input.pressed(MouseButton::Left) {
@@ -308,7 +324,9 @@ fn image_dropped_system(
             },
             PickableBundle::default(),
             RaycastPickTarget::default(),
+            OnPointer::<DragStart>::target_remove::<Pickable>(),
             OnPointer::<Drag>::run_callback(drag_move_system),
+            OnPointer::<DragEnd>::target_insert(Pickable),
             DropInImage,
         );
 
