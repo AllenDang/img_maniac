@@ -304,7 +304,7 @@ fn image_dropped_system(
             base_color_texture: Some(tex_handle),
             channel: 0,
             show_outline: 0,
-            outline_color: Color::YELLOW,
+            outline_color: Color::rgb_u8(118, 157, 240),
             outline_width: 1.0,
         });
 
@@ -398,17 +398,32 @@ fn drag_move_system(
     In(event): In<ListenedEvent<Drag>>,
     keyboard_input: Res<Input<KeyCode>>,
     mouse_input: Res<Input<MouseButton>>,
-    mut query: Query<(&PickSelection, &mut Transform), With<DropInImage>>,
+    mut query: Query<(Entity, &PickSelection, &mut Transform), With<DropInImage>>,
     query_camera: Query<&Projection, With<CameraController>>,
 ) -> Bubble {
     let cam_projection = query_camera.single();
 
     if mouse_input.pressed(MouseButton::Left) && !keyboard_input.pressed(KeyCode::Space) {
         if let Projection::Orthographic(ortho) = cam_projection {
-            for (selection, mut transform) in query.iter_mut() {
+            let x = event.delta.x * DRAG_SPEED * ortho.scale;
+            let y = event.delta.y * DRAG_SPEED * ortho.scale;
+
+            let mut dragging_entity: Option<Entity> = None;
+
+            if let Ok((entity, _selection, mut transform)) = query.get_mut(event.target) {
+                dragging_entity = Some(entity);
+
+                transform.translation.x += x;
+                transform.translation.y += y;
+            }
+
+            for (_, selection, mut transform) in query
+                .iter_mut()
+                .filter(|(e, _, _)| dragging_entity.is_some() && dragging_entity.unwrap() != *e)
+            {
                 if selection.is_selected {
-                    transform.translation.x += event.delta.x * DRAG_SPEED * ortho.scale;
-                    transform.translation.y += event.delta.y * DRAG_SPEED * ortho.scale;
+                    transform.translation.x += x;
+                    transform.translation.y += y;
                 }
             }
         }
