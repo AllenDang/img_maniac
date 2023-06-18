@@ -15,6 +15,8 @@ pub struct MaterialSeparateChannel {
     pub outline_color: Color,
     #[uniform(0)]
     pub outline_width: f32,
+    #[uniform(0)]
+    pub quad_ratio: f32,
 
     #[texture(1)]
     #[sampler(2)]

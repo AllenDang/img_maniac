@@ -3,6 +3,7 @@ struct MaterialSeparateChannel {
     show_outline: u32,
     outline_color: vec4<f32>,
     outline_width: f32,
+    quad_ratio: f32,
 };
 
 @group(1) @binding(0)
@@ -44,22 +45,25 @@ fn fragment(
 
     final_color = final_color * blend;
 
-    let outline_width = material.outline_width / 400.0;
-
     if material.show_outline > 0u {
-        if uv.y < outline_width {
+        let outline_width = material.outline_width / 400.0;
+
+        var outline_width_top_buttom = outline_width;
+        var outline_width_left_right = outline_width;
+
+        if material.quad_ratio > 1.0 {
+            outline_width_left_right /= material.quad_ratio;
+        }
+
+        if material.quad_ratio < 1.0 {
+            outline_width_top_buttom /= material.quad_ratio;
+        }
+
+        if uv.y < outline_width_top_buttom || uv.y > 1.0 - outline_width_top_buttom {
             final_color = material.outline_color;
         }
 
-        if uv.x < outline_width {
-            final_color = material.outline_color;
-        }
-
-        if uv.x > 1.0 - outline_width {
-            final_color = material.outline_color;
-        }
-
-        if uv.y > 1.0 - outline_width {
+        if uv.x < outline_width_left_right || uv.x > 1.0 - outline_width_left_right {
             final_color = material.outline_color;
         }
     }
