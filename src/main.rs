@@ -10,12 +10,10 @@ use bevy::{
 };
 use bevy_mod_picking::{picking_core::PickingPluginsSettings, prelude::*};
 use check_img_format::is_supported_format;
-use mat_progress_indicator::MaterialProgressIndicator;
 use mat_separate_channel::MaterialSeparateChannel;
 use taffy::style_helpers::{TaffyAuto, TaffyMaxContent};
 
 mod check_img_format;
-mod mat_progress_indicator;
 mod mat_separate_channel;
 
 struct ImageDropEvent {
@@ -54,7 +52,6 @@ fn main() {
             ..default()
         }))
         .add_plugin(MaterialPlugin::<MaterialSeparateChannel>::default())
-        .add_plugin(MaterialPlugin::<MaterialProgressIndicator>::default())
         .add_plugins(DefaultPickingPlugins)
         .add_event::<ImageDropEvent>()
         .add_event::<RearrangeEvent>()
@@ -69,7 +66,6 @@ fn main() {
             highlight_outline_system,
             rearrange_image_system,
             trigger_rearrange_system,
-            create_loading_progress,
         ))
         .run()
 }
@@ -146,39 +142,6 @@ fn startup_system(
                 }
             }
         }
-    }
-}
-
-fn create_loading_progress(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut cmds: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<MaterialProgressIndicator>>,
-) {
-    if keyboard_input.pressed(KeyCode::A) {
-        cmds.spawn(MaterialMeshBundle {
-            mesh: meshes.add(Mesh::from(shape::Quad::new(Vec2::new(
-                QUAD_SIZE + 1.0,
-                QUAD_SIZE,
-            )))),
-            material: materials.add(MaterialProgressIndicator {
-                background_color: Color::BLUE,
-                aspect_ratio: (QUAD_SIZE + 1.0) / QUAD_SIZE,
-                ring_inner_radius: 0.4,
-                ring_outer_radius: 0.45,
-                ring_color: Color::WHITE,
-                nob_radius: 0.1,
-                nob_color: Color::RED,
-                nob_rotation_speed: 5.0,
-                dot_radius: 0.03,
-                dot_color: Color::YELLOW,
-                dot_distance: 0.1,
-                dot_margin_top: -0.2,
-                dot_fade_speed: 2.0,
-                anti_alias_factor: 0.01,
-            }),
-            ..default()
-        });
     }
 }
 
