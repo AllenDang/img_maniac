@@ -1,10 +1,10 @@
 use bevy::{
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypePath, TypeUuid},
     render::render_resource::{AsBindGroup, ShaderRef},
 };
 
-#[derive(AsBindGroup, TypeUuid, Debug, Clone)]
+#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "11CE6B44-B18F-4149-A2E4-3E1D8E602664"]
 pub struct MaterialSeparateChannel {
     #[uniform(0)]

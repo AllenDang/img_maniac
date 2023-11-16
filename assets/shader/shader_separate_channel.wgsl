@@ -1,3 +1,5 @@
+#import bevy_pbr::forward_io::VertexOutput
+
 struct MaterialSeparateChannel {
     channel: u32,
     show_outline: u32,
@@ -16,9 +18,9 @@ var base_color_sampler: sampler;
 
 @fragment
 fn fragment(
-    #import bevy_pbr::mesh_vertex_output
+    in: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    var final_color = textureSample(base_color_texture, base_color_sampler, uv);
+    var final_color = textureSample(base_color_texture, base_color_sampler, in.uv);
 
     var blend = vec4<f32>(1.0, 1.0, 1.0, 1.0);
 
@@ -59,11 +61,11 @@ fn fragment(
             outline_width_top_buttom /= material.quad_ratio;
         }
 
-        if uv.y < outline_width_top_buttom || uv.y > 1.0 - outline_width_top_buttom {
+        if in.uv.y < outline_width_top_buttom || in.uv.y > 1.0 - outline_width_top_buttom {
             final_color = material.outline_color;
         }
 
-        if uv.x < outline_width_left_right || uv.x > 1.0 - outline_width_left_right {
+        if in.uv.x < outline_width_left_right || in.uv.x > 1.0 - outline_width_left_right {
             final_color = material.outline_color;
         }
     }

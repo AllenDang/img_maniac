@@ -16,11 +16,13 @@ use taffy::style_helpers::{TaffyAuto, TaffyMaxContent};
 mod check_img_format;
 mod mat_separate_channel;
 
+#[derive(Event)]
 struct ImageDropEvent {
     dropped_image_path: PathBuf,
     world_pos: Vec2,
 }
 
+#[derive(Event)]
 struct RearrangeEvent;
 
 #[derive(Component)]
@@ -43,38 +45,39 @@ fn main() {
             enable_highlighting: true,
             enable_interacting: true,
         })
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: format!("Image Maniac v{}", env!("CARGO_PKG_VERSION")),
-                resolution: (1440., 900.).into(),
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: format!("Image Maniac v{}", env!("CARGO_PKG_VERSION")),
+                    resolution: (1440., 900.).into(),
+                    ..default()
+                }),
                 ..default()
             }),
-            ..default()
-        }))
-        .add_plugin(MaterialPlugin::<MaterialSeparateChannel>::default())
-        .add_plugins(DefaultPickingPlugins)
+            MaterialPlugin::<MaterialSeparateChannel>::default(),
+            DefaultPickingPlugins,
+        ))
         .add_event::<ImageDropEvent>()
         .add_event::<RearrangeEvent>()
-        .add_startup_system(startup_system)
-        .add_systems((
-            file_drag_and_drop_system,
-            image_dropped_system,
-            change_channel_system,
-            camera_control_system,
-            change_cursor_system,
-            delete_selections_system,
-            highlight_outline_system,
-            rearrange_image_system,
-            trigger_rearrange_system,
-        ))
+        .add_systems(Startup, startup_system)
+        .add_systems(
+            Update,
+            (
+                file_drag_and_drop_system,
+                image_dropped_system,
+                change_channel_system,
+                camera_control_system,
+                change_cursor_system,
+                delete_selections_system,
+                highlight_outline_system,
+                rearrange_image_system,
+                trigger_rearrange_system,
+            ),
+        )
         .run()
 }
 
-fn startup_system(
-    mut cmds: Commands,
-    mut image_drop_event_writer: EventWriter<ImageDropEvent>,
-    asset_server: Res<AssetServer>,
-) {
+fn startup_system(mut cmds: Commands, mut image_drop_event_writer: EventWriter<ImageDropEvent>) {
     // camera
     cmds.spawn((
         Camera3dBundle {
@@ -88,28 +91,23 @@ fn startup_system(
             ..default()
         },
         CameraController,
-        RaycastPickCamera::default(),
     ));
 
     // UI
-    let font_handle = asset_server.load("font/FiraCode-Regular.ttf");
-
     let panel_style = Style {
         align_self: AlignSelf::FlexEnd,
         justify_content: JustifyContent::Center,
         align_items: AlignItems::Center,
-        position: UiRect {
-            bottom: Val::Px(10.0),
-            ..Default::default()
-        },
-        size: Size::new(Val::Percent(100.0), Val::Auto),
+        position_type: PositionType::Absolute,
+        bottom: Val::Px(10.0),
+        width: Val::Percent(100.0),
         ..Default::default()
     };
 
     let text_style = TextStyle {
-        font: font_handle,
         font_size: 16.0,
         color: Color::GRAY,
+        ..default()
     };
 
     cmds.spawn(NodeBundle {
@@ -153,7 +151,7 @@ fn file_drag_and_drop_system(
 ) {
     let (cam, cam_transform) = cameras.single();
 
-    for event in file_events.iter() {
+    for event in file_events.read() {
         if let FileDragAndDrop::DroppedFile { window, path_buf } = event {
             let win = windows.get(*window).unwrap();
 
@@ -223,7 +221,7 @@ fn camera_control_system(
     // Space + LMB to move camera
     if keyboard_input.pressed(KeyCode::Space) && mouse_input.pressed(MouseButton::Left) {
         let mut delta: Vec2 = Vec2::ZERO;
-        for event in mouse_motion_events.iter() {
+        for event in mouse_motion_events.read() {
             delta += event.delta;
         }
 
@@ -244,7 +242,7 @@ fn camera_control_system(
 
     // Handle mouse wheel input to translate camera's z position
     if let Projection::Orthographic(ortho) = projection.as_mut() {
-        for event in mouse_wheel_events.iter() {
+        for event in mouse_wheel_events.read() {
             let mut scale = ortho.scale;
             scale *= if event.y <= 0.0 {
                 ZOOM_SPEED
@@ -276,7 +274,7 @@ fn image_dropped_system(
 
     let mut batch_cmds = Vec::new();
 
-    for evt in image_drop_event_reader.iter() {
+    for evt in image_drop_event_reader.read() {
         let mut width_ratio = 1.0;
 
         if let Ok(dim) = imagesize::size(evt.dropped_image_path.clone()) {
@@ -324,10 +322,9 @@ fn image_dropped_system(
                 ..default()
             },
             PickableBundle::default(),
-            RaycastPickTarget::default(),
-            OnPointer::<DragStart>::target_remove::<Pickable>(),
-            OnPointer::<Drag>::run_callback(drag_move_system),
-            OnPointer::<DragEnd>::target_insert(Pickable),
+            On::<Pointer<DragStart>>::target_remove::<Pickable>(),
+            On::<Pointer<Drag>>::run(drag_move_system),
+            On::<Pointer<DragEnd>>::target_insert(Pickable::default()),
             DropInImage,
         );
 
@@ -379,7 +376,7 @@ fn delete_selections_system(
     query: Query<(Entity, &PickSelection), With<DropInImage>>,
 ) {
     // press x to delete selected image
-    if keyboard_input.pressed(KeyCode::X) && !keyboard_input.pressed(KeyCode::LShift) {
+    if keyboard_input.pressed(KeyCode::X) && !keyboard_input.pressed(KeyCode::ShiftLeft) {
         for (entity, sel) in query.iter() {
             if sel.is_selected {
                 cmds.entity(entity).despawn_recursive();
@@ -388,7 +385,7 @@ fn delete_selections_system(
     }
 
     // press shift + x to delete all
-    if keyboard_input.pressed(KeyCode::X) && keyboard_input.pressed(KeyCode::LShift) {
+    if keyboard_input.pressed(KeyCode::X) && keyboard_input.pressed(KeyCode::ShiftLeft) {
         for (entity, _) in query.iter() {
             cmds.entity(entity).despawn_recursive();
         }
@@ -396,12 +393,12 @@ fn delete_selections_system(
 }
 
 fn drag_move_system(
-    In(event): In<ListenedEvent<Drag>>,
+    event: Listener<Pointer<Drag>>,
     keyboard_input: Res<Input<KeyCode>>,
     mouse_input: Res<Input<MouseButton>>,
     mut query: Query<(Entity, &PickSelection, &mut Transform), With<DropInImage>>,
     query_camera: Query<&Projection, With<CameraController>>,
-) -> Bubble {
+) {
     let cam_projection = query_camera.single();
 
     if mouse_input.pressed(MouseButton::Left) && !keyboard_input.pressed(KeyCode::Space) {
@@ -415,7 +412,7 @@ fn drag_move_system(
                 dragging_entity = Some(entity);
 
                 transform.translation.x += x;
-                transform.translation.y += y;
+                transform.translation.y -= y;
             }
 
             for (_, selection, mut transform) in query
@@ -424,20 +421,18 @@ fn drag_move_system(
             {
                 if selection.is_selected {
                     transform.translation.x += x;
-                    transform.translation.y += y;
+                    transform.translation.y -= y;
                 }
             }
         }
     }
-
-    Bubble::Up
 }
 
 fn rearrange_image_system(
     mut events: EventReader<RearrangeEvent>,
     mut query: Query<&mut Transform, With<DropInImage>>,
 ) {
-    if events.iter().len() > 0 && query.iter().len() > 0 {
+    if events.read().len() > 0 && query.iter().len() > 0 {
         let mut t = taffy::Taffy::new();
         let mut nodes = Vec::new();
         let mut entities = Vec::new();
@@ -511,12 +506,12 @@ fn trigger_rearrange_system(
 }
 
 fn highlight_outline_system(
-    mut selections: EventReader<PointerEvent<Select>>,
-    mut deselections: EventReader<PointerEvent<Deselect>>,
+    mut selections: EventReader<Pointer<Select>>,
+    mut deselections: EventReader<Pointer<Deselect>>,
     mut materials: ResMut<Assets<MaterialSeparateChannel>>,
     mut query: Query<&Handle<MaterialSeparateChannel>, With<PickSelection>>,
 ) {
-    for selection in selections.iter() {
+    for selection in selections.read() {
         if let Ok(mat_handle) = query.get_mut(selection.target) {
             if let Some(mat) = materials.get_mut(mat_handle) {
                 mat.show_outline = 1;
@@ -524,7 +519,7 @@ fn highlight_outline_system(
         }
     }
 
-    for deselection in deselections.iter() {
+    for deselection in deselections.read() {
         if let Ok(mat_handle) = query.get_mut(deselection.target) {
             if let Some(mat) = materials.get_mut(mat_handle) {
                 mat.show_outline = 0;
