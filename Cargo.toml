@@ -24,7 +24,7 @@ opt-level = 3
 codegen-units = 1
 
 [dependencies]
-bevy = { version = "0.12", default-features = false, features = [
+bevy = { version = "0.13", default-features = false, features = [
   "basis-universal",
   "bevy_asset",
   "bevy_core_pipeline",
@@ -51,7 +51,7 @@ bevy = { version = "0.12", default-features = false, features = [
   "zlib",
   "zstd",               # needed if using zstd in KTX2 files
 ] }
-bevy_mod_picking = { version = "0.17", default-features = false, features = [
+bevy_mod_picking = { version = "0.18", default-features = false, features = [
   "backend_raycast",
   "selection",
 ] }

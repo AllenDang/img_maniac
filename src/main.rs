@@ -3,6 +3,7 @@
 use std::path::{Path, PathBuf};
 
 use bevy::{
+    asset::embedded_asset,
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
     render::camera::ScalingMode,
@@ -36,14 +37,14 @@ const ZOOM_SPEED: f32 = 1.1;
 const DRAG_SPEED: f32 = 0.002;
 
 fn main() {
-    App::new()
-        .insert_resource(WinitSettings::desktop_app())
+    let mut app = App::new();
+
+    app.insert_resource(WinitSettings::desktop_app())
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
         .insert_resource(PickingPluginsSettings {
-            enable: true,
-            enable_input: true,
-            enable_highlighting: true,
-            enable_interacting: true,
+            is_enabled: true,
+            is_input_enabled: true,
+            is_focus_enabled: true,
         })
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
@@ -73,8 +74,11 @@ fn main() {
                 rearrange_image_system,
                 trigger_rearrange_system,
             ),
-        )
-        .run()
+        );
+
+    embedded_asset!(app, "shader/shader_separate_channel.wgsl");
+
+    app.run()
 }
 
 fn startup_system(mut cmds: Commands, mut image_drop_event_writer: EventWriter<ImageDropEvent>) {
@@ -162,7 +166,7 @@ fn file_drag_and_drop_system(
                     .cursor_position()
                     .and_then(|cursor| cam.viewport_to_world(cam_transform, cursor))
                 {
-                    if let Some(distance) = ray.intersect_plane(Vec3::ZERO, Vec3::Z) {
+                    if let Some(distance) = ray.intersect_plane(Vec3::ZERO, Plane3d::new(Vec3::Z)) {
                         world_pos = Some(ray.get_point(distance).truncate());
                     }
                 }
@@ -174,15 +178,15 @@ fn file_drag_and_drop_system(
                     } else {
                         Vec2::ZERO
                     },
-                })
+                });
             }
         }
     }
 }
 
 fn change_cursor_system(
-    keyboard_input: Res<Input<KeyCode>>,
-    mouse_input: Res<Input<MouseButton>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
     mut windows: Query<&mut Window>,
 ) {
     let mut window = windows.single_mut();
@@ -199,8 +203,8 @@ fn change_cursor_system(
 
 #[allow(clippy::too_many_arguments)]
 fn camera_control_system(
-    keyboard_input: Res<Input<KeyCode>>,
-    mouse_input: Res<Input<MouseButton>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut picking_setting: ResMut<PickingPluginsSettings>,
@@ -211,11 +215,11 @@ fn camera_control_system(
     let (mut cam_transform, mut projection) = query.single_mut();
 
     if keyboard_input.just_pressed(KeyCode::Space) {
-        picking_setting.enable = false;
+        picking_setting.is_enabled = false;
     }
 
     if keyboard_input.just_released(KeyCode::Space) {
-        picking_setting.enable = true;
+        picking_setting.is_enabled = true;
     }
 
     // Space + LMB to move camera
@@ -294,9 +298,7 @@ fn image_dropped_system(
         }
 
         let tex_handle = asset_server.load(evt.dropped_image_path.clone());
-        let quad_handle = meshes.add(Mesh::from(shape::Quad::new(Vec2::new(
-            QUAD_SIZE, QUAD_SIZE,
-        ))));
+        let quad_handle = meshes.add(Mesh::from(Rectangle::new(QUAD_SIZE, QUAD_SIZE)));
 
         let mat_handle = materials.add(MaterialSeparateChannel {
             base_color_texture: Some(tex_handle),
@@ -337,7 +339,7 @@ fn image_dropped_system(
 }
 
 fn change_channel_system(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut materials: ResMut<Assets<MaterialSeparateChannel>>,
     mut query: Query<&Handle<MaterialSeparateChannel>, With<DropInImage>>,
 ) {
@@ -349,34 +351,34 @@ fn change_channel_system(
         }
     };
 
-    if keyboard_input.pressed(KeyCode::Key1) {
+    if keyboard_input.pressed(KeyCode::Digit1) {
         change_channel(1);
     }
 
-    if keyboard_input.pressed(KeyCode::Key2) {
+    if keyboard_input.pressed(KeyCode::Digit2) {
         change_channel(2);
     }
 
-    if keyboard_input.pressed(KeyCode::Key3) {
+    if keyboard_input.pressed(KeyCode::Digit3) {
         change_channel(3);
     }
 
-    if keyboard_input.pressed(KeyCode::Key4) {
+    if keyboard_input.pressed(KeyCode::Digit4) {
         change_channel(4);
     }
 
-    if keyboard_input.pressed(KeyCode::A) {
+    if keyboard_input.pressed(KeyCode::KeyA) {
         change_channel(0);
     }
 }
 
 fn delete_selections_system(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut cmds: Commands,
     query: Query<(Entity, &PickSelection), With<DropInImage>>,
 ) {
     // press x to delete selected image
-    if keyboard_input.pressed(KeyCode::X) && !keyboard_input.pressed(KeyCode::ShiftLeft) {
+    if keyboard_input.pressed(KeyCode::KeyX) && !keyboard_input.pressed(KeyCode::ShiftLeft) {
         for (entity, sel) in query.iter() {
             if sel.is_selected {
                 cmds.entity(entity).despawn_recursive();
@@ -385,7 +387,7 @@ fn delete_selections_system(
     }
 
     // press shift + x to delete all
-    if keyboard_input.pressed(KeyCode::X) && keyboard_input.pressed(KeyCode::ShiftLeft) {
+    if keyboard_input.pressed(KeyCode::KeyX) && keyboard_input.pressed(KeyCode::ShiftLeft) {
         for (entity, _) in query.iter() {
             cmds.entity(entity).despawn_recursive();
         }
@@ -394,8 +396,8 @@ fn delete_selections_system(
 
 fn drag_move_system(
     event: Listener<Pointer<Drag>>,
-    keyboard_input: Res<Input<KeyCode>>,
-    mouse_input: Res<Input<MouseButton>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
     mut query: Query<(Entity, &PickSelection, &mut Transform), With<DropInImage>>,
     query_camera: Query<&Projection, With<CameraController>>,
 ) {
@@ -497,10 +499,10 @@ fn rearrange_image_system(
 }
 
 fn trigger_rearrange_system(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut rearrange_event: EventWriter<RearrangeEvent>,
 ) {
-    if keyboard_input.pressed(KeyCode::R) {
+    if keyboard_input.pressed(KeyCode::KeyR) {
         rearrange_event.send(RearrangeEvent);
     }
 }

@@ -1,11 +1,10 @@
 use bevy::{
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
 
-#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "11CE6B44-B18F-4149-A2E4-3E1D8E602664"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 pub struct MaterialSeparateChannel {
     #[uniform(0)]
     pub channel: u32,
@@ -25,7 +24,7 @@ pub struct MaterialSeparateChannel {
 
 impl Material for MaterialSeparateChannel {
     fn fragment_shader() -> ShaderRef {
-        "shader/shader_separate_channel.wgsl".into()
+        "embedded://img_maniac/shader/shader_separate_channel.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {
