@@ -11,10 +11,12 @@ use bevy::{
 };
 use bevy_mod_picking::{picking_core::PickingPluginsSettings, prelude::*};
 use check_img_format::is_supported_format;
+use iter_files::get_files_recursive;
 use mat_separate_channel::MaterialSeparateChannel;
 use taffy::style_helpers::{TaffyAuto, TaffyMaxContent};
 
 mod check_img_format;
+mod iter_files;
 mod mat_separate_channel;
 
 #[derive(Event)]
@@ -159,7 +161,21 @@ fn file_drag_and_drop_system(
         if let FileDragAndDrop::DroppedFile { window, path_buf } = event {
             let win = windows.get(*window).unwrap();
 
-            if is_supported_format(path_buf) {
+            let mut dropped_files = vec![];
+
+            if path_buf.is_file() {
+                dropped_files.push(path_buf.clone());
+            } else {
+                for entry in get_files_recursive(path_buf) {
+                    let entry = entry.unwrap();
+                    let entry_path = entry.path();
+                    if is_supported_format(&entry_path) {
+                        dropped_files.push(entry_path.clone());
+                    }
+                }
+            }
+
+            for path_buf in dropped_files {
                 let mut world_pos: Option<Vec2> = None;
 
                 if let Some(ray) = win
@@ -460,7 +476,7 @@ fn rearrange_image_system(
             entities.push(trans);
         }
 
-        let max_width = 7.0 * QUAD_SIZE * factor;
+        let max_width = 12.0 * QUAD_SIZE * factor;
 
         let root = t
             .new_with_children(
