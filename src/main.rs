@@ -13,7 +13,7 @@ use bevy_mod_picking::{picking_core::PickingPluginsSettings, prelude::*};
 use check_img_format::is_supported_format;
 use iter_files::get_files_recursive;
 use mat_separate_channel::MaterialSeparateChannel;
-use taffy::style_helpers::{TaffyAuto, TaffyMaxContent};
+use taffy::style_helpers::{length, TaffyAuto, TaffyMaxContent};
 
 mod check_img_format;
 mod iter_files;
@@ -42,7 +42,7 @@ fn main() {
     let mut app = App::new();
 
     app.insert_resource(WinitSettings::desktop_app())
-        .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
+        .insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.1)))
         .insert_resource(PickingPluginsSettings {
             is_enabled: true,
             is_input_enabled: true,
@@ -80,7 +80,7 @@ fn main() {
 
     embedded_asset!(app, "shader/shader_separate_channel.wgsl");
 
-    app.run()
+    app.run();
 }
 
 fn startup_system(mut cmds: Commands, mut image_drop_event_writer: EventWriter<ImageDropEvent>) {
@@ -112,7 +112,7 @@ fn startup_system(mut cmds: Commands, mut image_drop_event_writer: EventWriter<I
 
     let text_style = TextStyle {
         font_size: 16.0,
-        color: Color::GRAY,
+        color: Color::from(bevy::color::palettes::css::GRAY),
         ..default()
     };
 
@@ -182,7 +182,9 @@ fn file_drag_and_drop_system(
                     .cursor_position()
                     .and_then(|cursor| cam.viewport_to_world(cam_transform, cursor))
                 {
-                    if let Some(distance) = ray.intersect_plane(Vec3::ZERO, Plane3d::new(Vec3::Z)) {
+                    if let Some(distance) =
+                        ray.intersect_plane(Vec3::ZERO, InfinitePlane3d::new(Vec3::Z))
+                    {
                         world_pos = Some(ray.get_point(distance).truncate());
                     }
                 }
@@ -320,7 +322,7 @@ fn image_dropped_system(
             base_color_texture: Some(tex_handle),
             channel: 0,
             show_outline: 0,
-            outline_color: Color::rgb_u8(118, 157, 240),
+            outline_color: LinearRgba::rgb(118., 157., 240.),
             outline_width: 1.0,
             quad_ratio: width_ratio,
         });
@@ -451,7 +453,7 @@ fn rearrange_image_system(
     mut query: Query<&mut Transform, With<DropInImage>>,
 ) {
     if events.read().len() > 0 && query.iter().len() > 0 {
-        let mut t = taffy::Taffy::new();
+        let mut t: taffy::TaffyTree<()> = taffy::TaffyTree::new();
         let mut nodes = Vec::new();
         let mut entities = Vec::new();
 
@@ -461,12 +463,8 @@ fn rearrange_image_system(
             let node = t
                 .new_leaf(taffy::prelude::Style {
                     size: taffy::prelude::Size {
-                        width: taffy::prelude::Dimension::Points(
-                            trans.scale.x * QUAD_SIZE * factor,
-                        ),
-                        height: taffy::prelude::Dimension::Points(
-                            trans.scale.y * QUAD_SIZE * factor,
-                        ),
+                        width: length(trans.scale.x * QUAD_SIZE * factor),
+                        height: length(trans.scale.y * QUAD_SIZE * factor),
                     },
                     ..default()
                 })
@@ -486,11 +484,11 @@ fn rearrange_image_system(
                     justify_content: Some(taffy::prelude::JustifyContent::Center),
                     align_items: Some(taffy::prelude::AlignItems::Center),
                     gap: taffy::prelude::Size {
-                        width: taffy::prelude::LengthPercentage::Points(0.16 * factor),
-                        height: taffy::prelude::LengthPercentage::Points(0.16 * factor),
+                        width: length(0.16 * factor),
+                        height: length(0.16 * factor),
                     },
                     size: taffy::prelude::Size {
-                        width: taffy::prelude::Dimension::Points(max_width),
+                        width: length(max_width),
                         height: taffy::prelude::Dimension::AUTO,
                     },
                     ..default()

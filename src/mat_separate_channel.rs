@@ -11,7 +11,7 @@ pub struct MaterialSeparateChannel {
     #[uniform(0)]
     pub show_outline: u32,
     #[uniform(0)]
-    pub outline_color: Color,
+    pub outline_color: LinearRgba,
     #[uniform(0)]
     pub outline_width: f32,
     #[uniform(0)]

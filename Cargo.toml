@@ -24,36 +24,10 @@ opt-level = 3
 codegen-units = 1
 
 [dependencies]
-bevy = { version = "0.13", default-features = false, features = [
-  "basis-universal",
-  "bevy_asset",
-  "bevy_core_pipeline",
-  "bevy_pbr",
-  "bevy_render",
-  "bevy_scene",
-  "bevy_text",
-  "bevy_ui",
-  "bevy_winit",
-  "bmp",
-  "dds",
-  "default_font",
-  "exr",
-  "hdr",
-  "jpeg",
-  "ktx2",
-  "multi-threaded",
-  "png",
-  "pnm",
-  "tga",
-  "tonemapping_luts",
-  "webp",
-  "x11",
-  "zlib",
-  "zstd",               # needed if using zstd in KTX2 files
-] }
-bevy_mod_picking = { version = "0.18", default-features = false, features = [
+bevy = { version = "0.14", default-features = false, features = ["basis-universal", "bevy_pbr", "bevy_scene", "bevy_ui", "bevy_winit", "bmp", "dds", "default_font", "hdr", "jpeg", "png", "pnm", "tga", "tonemapping_luts", "webp", "x11", "zlib"] }
+bevy_mod_picking = { version = "0.20", default-features = false, features = [
   "backend_raycast",
   "selection",
 ] }
-imagesize = { version = "0.12" }
-taffy = { version = "0.3.10", default-features = false, features = ["std"] }
+imagesize = { version = "0.13" }
+taffy = { version = "0.5", default-features = false, features = ["std"] }
