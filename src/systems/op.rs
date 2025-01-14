@@ -7,7 +7,7 @@ use super::rearrange::{DropInImage, EvtRearrange};
 pub fn delete_all_system(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut cmds: Commands,
-    q_image: Query<Entity, With<Sprite>>,
+    q_image: Query<Entity, With<DropInImage>>,
 ) {
     if keyboard_input.pressed(KeyCode::KeyX) {
         for entity in q_image.iter() {
