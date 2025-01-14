@@ -27,7 +27,7 @@ pub fn cam_zoom_system(
 ) {
     const ZOOM_IN_SPEED: f32 = 0.1;
     const ZOOM_OUT_SPEED: f32 = 0.2;
-    const MIN_ZOOM: f32 = 0.1;
+    const MIN_ZOOM: f32 = 0.05;
     const MAX_ZOOM: f32 = 20.0;
     const SMOOTH_SPEED: f32 = 12.0;
     const MAX_DELTA_TIME: f32 = 1.0 / 60.0;
