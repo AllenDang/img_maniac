@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 
 [package.metadata.bundle]
 name = "img_maniac"
-identifier = "com.allendang.img_board"
+identifier = "com.allendang.img_maniac"
 icon = ["icon/app.png"]
 version = "0.3.3"
 copyright = "Copyright (c) Allen Dang 2023. All rights reserved."

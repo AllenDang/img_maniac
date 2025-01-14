@@ -59,7 +59,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Text::new("A: Show RGBA | 1-4: Switch RGBA | R: Re-arrange | X: Del All | MousWheel: Zoom | MMB: Pan"),
         TextFont {
-            font_size: 16.0,
+            font_size: 14.0,
             ..default()
         },
         TextColor(Color::from(bevy::color::palettes::css::GRAY)),
