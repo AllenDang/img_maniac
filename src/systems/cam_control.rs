@@ -23,6 +23,7 @@ use super::rearrange::DropInImage;
 pub struct CamStatus {
     pub target_scale: f32,
     pub current_scale: f32,
+    pub enable_pixel_perfect: bool,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -91,25 +92,30 @@ pub fn cam_zoom_system(
 
                 // Apply position compensation to keep cursor point stationary
                 transform.translation += position_compensation.extend(0.0);
-            }
 
-            let mut change_image_sampler = |sampler: ImageSampler| {
-                for mat_handle in q_mat.iter_mut() {
-                    if let Some(mat) = materials.get_mut(mat_handle) {
-                        if let Some(tex) = &mat.base_color_texture {
-                            if let Some(img) = images.get_mut(tex.id()) {
-                                img.sampler = sampler.to_owned();
+                // Dynamic change image sampler
+                let mut change_image_sampler = |sampler: ImageSampler| {
+                    for mat_handle in q_mat.iter_mut() {
+                        if let Some(mat) = materials.get_mut(mat_handle) {
+                            if let Some(tex) = &mat.base_color_texture {
+                                if let Some(img) = images.get_mut(tex.id()) {
+                                    img.sampler = sampler.to_owned();
+                                }
                             }
                         }
                     }
-                }
-            };
+                };
 
-            change_image_sampler(if new_scale <= 0.1 {
-                ImageSampler::nearest()
-            } else {
-                ImageSampler::linear()
-            });
+                if new_scale <= 0.1 {
+                    if !status.enable_pixel_perfect {
+                        change_image_sampler(ImageSampler::nearest());
+                        status.enable_pixel_perfect = true;
+                    }
+                } else if status.enable_pixel_perfect {
+                    change_image_sampler(ImageSampler::linear());
+                    status.enable_pixel_perfect = false;
+                }
+            }
         }
     }
 }

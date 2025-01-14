@@ -57,6 +57,7 @@ fn setup(
         systems::cam_control::CamStatus {
             target_scale: 2.0,
             current_scale: 2.0,
+            enable_pixel_perfect: false,
         },
     ));
 
