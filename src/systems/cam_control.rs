@@ -25,8 +25,8 @@ pub fn cam_zoom_system(
     window: Query<&Window>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
 ) {
-    const ZOOM_IN_SPEED: f32 = 0.1;
-    const ZOOM_OUT_SPEED: f32 = 0.2;
+    const ZOOM_IN_SPEED: f32 = 0.05;
+    const ZOOM_OUT_SPEED: f32 = 0.1;
     const MIN_ZOOM: f32 = 0.05;
     const MAX_ZOOM: f32 = 20.0;
     const SMOOTH_SPEED: f32 = 12.0;
