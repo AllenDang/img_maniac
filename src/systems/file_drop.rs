@@ -23,7 +23,7 @@ fn get_files_recursive<P: AsRef<Path>>(
         })
 }
 
-fn is_supported_format(pb: &Path) -> bool {
+pub fn is_supported_format(pb: &Path) -> bool {
     if pb.is_file() {
         if let Some(ext) = pb.extension() {
             if let Some(ext_str) = ext.to_str() {

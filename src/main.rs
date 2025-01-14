@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{path::Path, time::Duration};
 
 use bevy::{asset::embedded_asset, prelude::*, sprite::Material2dPlugin, winit::WinitSettings};
 use shader::mat_separate_channel::MaterialSeparateChannel;
@@ -47,7 +47,11 @@ fn main() {
     app.run();
 }
 
-fn setup(mut commands: Commands) {
+fn setup(
+    mut commands: Commands,
+    mut evt_file_drag_and_drop: EventWriter<FileDragAndDrop>,
+    q_win: Query<Entity, With<Window>>,
+) {
     commands.spawn((
         Camera2d,
         systems::cam_control::CamStatus {
@@ -71,4 +75,25 @@ fn setup(mut commands: Commands) {
             ..default()
         },
     ));
+
+    // Process command line args, should be multiple image paths
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if !args.is_empty() {
+        if let Ok(cwd) = std::env::current_dir() {
+            for arg in args.iter() {
+                let img_path = if Path::new(arg).is_relative() {
+                    cwd.join(arg)
+                } else {
+                    Path::new(arg).to_path_buf()
+                };
+
+                if img_path.exists() && file_drop::is_supported_format(&img_path) {
+                    evt_file_drag_and_drop.send(FileDragAndDrop::DroppedFile {
+                        window: q_win.single(),
+                        path_buf: img_path,
+                    });
+                }
+            }
+        }
+    }
 }
