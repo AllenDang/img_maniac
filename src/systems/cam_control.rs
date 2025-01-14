@@ -1,16 +1,23 @@
 use bevy::{
+    asset::Assets,
+    image::{Image, ImageSampler},
     input::{
         mouse::{MouseMotion, MouseWheel},
         ButtonInput,
     },
     math::{FloatExt, Vec2, Vec3},
     prelude::{
-        Camera, Camera2d, Component, EventReader, GlobalTransform, MouseButton, Query, Res,
+        Camera, Camera2d, Component, EventReader, GlobalTransform, MouseButton, Query, Res, ResMut,
         Transform, With,
     },
+    sprite::MeshMaterial2d,
     time::Time,
     window::Window,
 };
+
+use crate::shader::mat_separate_channel::MaterialSeparateChannel;
+
+use super::rearrange::DropInImage;
 
 #[derive(Component)]
 pub struct CamStatus {
@@ -18,12 +25,16 @@ pub struct CamStatus {
     pub current_scale: f32,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn cam_zoom_system(
     mut cam: Query<(&mut Transform, &mut CamStatus), With<Camera2d>>,
     mut evt_mouse_wheel: EventReader<MouseWheel>,
     time: Res<Time>,
     window: Query<&Window>,
     q_camera: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
+    mut materials: ResMut<Assets<MaterialSeparateChannel>>,
+    mut q_mat: Query<&MeshMaterial2d<MaterialSeparateChannel>, With<DropInImage>>,
+    mut images: ResMut<Assets<Image>>,
 ) {
     const ZOOM_IN_SPEED: f32 = 0.05;
     const ZOOM_OUT_SPEED: f32 = 0.1;
@@ -81,6 +92,24 @@ pub fn cam_zoom_system(
                 // Apply position compensation to keep cursor point stationary
                 transform.translation += position_compensation.extend(0.0);
             }
+
+            let mut process_materials = |sampler: ImageSampler| {
+                for mat_handle in q_mat.iter_mut() {
+                    if let Some(mat) = materials.get_mut(mat_handle) {
+                        if let Some(tex) = &mat.base_color_texture {
+                            if let Some(img) = images.get_mut(tex.id()) {
+                                img.sampler = sampler.to_owned();
+                            }
+                        }
+                    }
+                }
+            };
+
+            process_materials(if new_scale <= 0.1 {
+                ImageSampler::nearest()
+            } else {
+                ImageSampler::linear()
+            });
         }
     }
 }
