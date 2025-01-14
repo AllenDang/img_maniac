@@ -2,6 +2,7 @@ use bevy::{
     prelude::*,
     reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
+    sprite::Material2d,
 };
 
 #[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
@@ -22,12 +23,8 @@ pub struct MaterialSeparateChannel {
     pub base_color_texture: Option<Handle<Image>>,
 }
 
-impl Material for MaterialSeparateChannel {
+impl Material2d for MaterialSeparateChannel {
     fn fragment_shader() -> ShaderRef {
-        "embedded://img_maniac/shader/shader_separate_channel.wgsl".into()
-    }
-
-    fn alpha_mode(&self) -> AlphaMode {
-        AlphaMode::Blend
+        "embedded://img_maniac/shader/separate_channel.wgsl".into()
     }
 }

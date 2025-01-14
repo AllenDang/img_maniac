@@ -1,6 +1,6 @@
 [package]
 name = "img_maniac"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Allen Dang <allengnr@gmail.com>"]
 description = "A powerful image viewer"
@@ -8,26 +8,48 @@ license = "MIT OR Apache-2.0"
 
 [package.metadata.bundle]
 name = "img_maniac"
-identifier = "com.allendang.img_maniac"
+identifier = "com.allendang.img_board"
 icon = ["icon/app.png"]
 version = "0.3.3"
 copyright = "Copyright (c) Allen Dang 2023. All rights reserved."
 category = "Developer Tool"
 short_description = "A powerful image viewer"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [profile.release]
-strip = true
-lto = "thin"
-opt-level = 3
+strip = "symbols"
+lto = "fat"
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
+
+[profile.release.package."*"]
+strip = "symbols"
+opt-level = "z"
 codegen-units = 1
 
 [dependencies]
-bevy = { version = "0.14", default-features = false, features = ["basis-universal", "bevy_pbr", "bevy_scene", "bevy_ui", "bevy_winit", "bmp", "dds", "default_font", "hdr", "jpeg", "png", "pnm", "tga", "tonemapping_luts", "webp", "x11", "zlib"] }
-bevy_mod_picking = { version = "0.20", default-features = false, features = [
-  "backend_raycast",
-  "selection",
+bevy = { version = "0.15", default-features = false, features = [
+  "bevy_asset",
+  "bevy_sprite",
+  "bevy_text",
+  "bevy_ui",
+  "bevy_window",
+  "bevy_winit",
+  "bmp",
+  "default_font",
+  "exr",
+  "ff",
+  "gif",
+  "hdr",
+  "ico",
+  "jpeg",
+  "multi_threaded",
+  "png",
+  "pnm",
+  "qoi",
+  "tga",
+  "tiff",
+  "webp",
 ] }
-imagesize = { version = "0.13" }
-taffy = { version = "0.5", default-features = false, features = ["std"] }
+imagesize = "0.13.0"
+taffy = "0.7.5"
