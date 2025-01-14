@@ -93,7 +93,7 @@ pub fn cam_zoom_system(
                 transform.translation += position_compensation.extend(0.0);
             }
 
-            let mut process_materials = |sampler: ImageSampler| {
+            let mut change_image_sampler = |sampler: ImageSampler| {
                 for mat_handle in q_mat.iter_mut() {
                     if let Some(mat) = materials.get_mut(mat_handle) {
                         if let Some(tex) = &mat.base_color_texture {
@@ -105,7 +105,7 @@ pub fn cam_zoom_system(
                 }
             };
 
-            process_materials(if new_scale <= 0.1 {
+            change_image_sampler(if new_scale <= 0.1 {
                 ImageSampler::nearest()
             } else {
                 ImageSampler::linear()
