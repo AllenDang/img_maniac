@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use bevy::prelude::*;
 use taffy::{
     prelude::{auto, length, AlignContent, AlignItems, FlexDirection, FlexWrap, TaffyMaxContent},
@@ -8,6 +10,7 @@ use taffy::{
 pub struct DropInImage {
     pub width: f32,
     pub height: f32,
+    pub file_path: PathBuf,
 }
 
 #[derive(Event)]

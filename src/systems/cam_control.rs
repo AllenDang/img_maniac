@@ -6,10 +6,7 @@ use bevy::{
         ButtonInput,
     },
     math::{FloatExt, Vec2, Vec3},
-    prelude::{
-        Camera, Camera2d, Component, EventReader, GlobalTransform, MouseButton, Query, Res, ResMut,
-        Transform, With,
-    },
+    prelude::*,
     sprite::MeshMaterial2d,
     time::Time,
     window::Window,
@@ -122,12 +119,13 @@ pub fn cam_zoom_system(
 
 pub fn cam_move_system(
     mut cam: Query<&mut Transform, With<Camera2d>>,
-    btn: Res<ButtonInput<MouseButton>>,
+    mouse_btn: Res<ButtonInput<MouseButton>>,
+    kb_btn: Res<ButtonInput<KeyCode>>,
     mut motion_evr: EventReader<MouseMotion>,
 ) {
     const MOVE_SPEED: f32 = 1.0; // Adjust this value to change movement speed
-
-    if !btn.pressed(MouseButton::Middle) {
+                                 //
+    if !(mouse_btn.pressed(MouseButton::Left) && kb_btn.pressed(KeyCode::Space)) {
         motion_evr.clear();
         return;
     }

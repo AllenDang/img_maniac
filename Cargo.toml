@@ -30,6 +30,8 @@ codegen-units = 1
 [dependencies]
 bevy = { version = "0.15", default-features = false, features = [
   "bevy_asset",
+  "bevy_mesh_picking_backend",
+  "bevy_picking",
   "bevy_text",
   "bevy_ui",
   "bevy_window",
@@ -51,4 +53,5 @@ bevy = { version = "0.15", default-features = false, features = [
   "webp",
 ] }
 imagesize = "0.13.0"
+opener = { version = "0.7.2", features = ["reveal"] }
 taffy = "0.7.5"

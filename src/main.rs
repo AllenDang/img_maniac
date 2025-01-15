@@ -26,6 +26,7 @@ fn main() {
             ..default()
         }),
         Material2dPlugin::<MaterialSeparateChannel>::default(),
+        MeshPickingPlugin,
     ))
     .add_event::<EvtRearrange>()
     .add_systems(Startup, setup)
@@ -62,7 +63,7 @@ fn setup(
     ));
 
     commands.spawn((
-        Text::new("A: Show RGBA | 1-4: Switch RGBA | R: Re-arrange | X: Del All | MousWheel: Zoom | MMB: Pan"),
+        Text::new("A: Show RGBA | 1-4: Switch RGBA | R: Re-arrange | X: Del All | MousWheel: Zoom | SPACE+MLB: Pan | MRB: Reveal File"),
         TextFont {
             font_size: 14.0,
             ..default()

@@ -6,7 +6,7 @@ use std::{
 
 use crate::{shader::mat_separate_channel::MaterialSeparateChannel, systems};
 
-use super::rearrange::EvtRearrange;
+use super::rearrange::{DropInImage, EvtRearrange};
 
 fn get_files_recursive<P: AsRef<Path>>(
     path: P,
@@ -77,8 +77,6 @@ pub fn file_drop_system(
             return;
         }
 
-        let mut batch_cmds = vec![];
-
         for (i, img_file_path) in dropped_files.iter().enumerate() {
             if let Ok(img_size) = imagesize::size(img_file_path) {
                 let width = img_size.width;
@@ -104,7 +102,7 @@ pub fn file_drop_system(
                     height as f32 * scale_ratio,
                 ));
 
-                batch_cmds.push((
+                cmds.spawn((
                     Mesh2d(meshes.add(rect)),
                     MeshMaterial2d(materials.add(MaterialSeparateChannel {
                         channel: 0,
@@ -117,14 +115,32 @@ pub fn file_drop_system(
                     systems::rearrange::DropInImage {
                         width: rect.size().x,
                         height: rect.size().y,
+                        file_path: img_file_path.to_owned(),
                     },
-                ));
+                ))
+                .observe(revel_file);
             }
         }
 
-        if !batch_cmds.is_empty() {
-            cmds.spawn_batch(batch_cmds);
+        if !dropped_files.is_empty() {
             evt_rearrage.send(EvtRearrange);
+        }
+    }
+}
+
+fn revel_file(
+    trigger: Trigger<Pointer<Down>>,
+    q_img: Query<&DropInImage>,
+    kb_input: Res<ButtonInput<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+) {
+    if kb_input.pressed(KeyCode::Space) {
+        return;
+    }
+
+    if mouse_input.pressed(MouseButton::Right) {
+        if let Ok(img) = q_img.get(trigger.entity()) {
+            opener::reveal(&img.file_path).expect("Failed to reveal the file");
         }
     }
 }
