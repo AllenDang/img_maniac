@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use std::{path::Path, time::Duration};
 
 use bevy::{asset::embedded_asset, prelude::*, sprite::Material2dPlugin, winit::WinitSettings};
