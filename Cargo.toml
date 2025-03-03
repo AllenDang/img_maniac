@@ -51,6 +51,7 @@ bevy = { version = "0.15", default-features = false, features = [
   "tga",
   "tiff",
   "webp",
+  "wayland",
 ] }
 imagesize = "0.13.0"
 opener = { version = "0.7.2", features = ["reveal"] }
